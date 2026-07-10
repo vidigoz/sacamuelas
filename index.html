@@ -255,6 +255,8 @@
       display:flex; flex-direction:column; overflow:hidden;
     }
     #toolsPanel.open{ transform:translateY(0); }
+    /* Ocultar el tirador de herramientas mientras el menú de inicio está abierto */
+    body.title-open #toolsPanel{ display:none; }
     #toolsHandle{
       display:flex; align-items:center; justify-content:center; gap:8px;
       flex:0 0 48px; height:48px;
@@ -285,7 +287,7 @@
   }
 </style>
 </head>
-<body>
+<body class="title-open">
 <div id="game">
   <div id="topBar">
   <header>
@@ -362,9 +364,8 @@
       <p class="subtitle">Anno Domini · 1347</p>
 
       <div class="story">
-        <p class="lead">Corre el año <b>1347</b> y la peste ya asoma tras los montes. En tu aldea no hay médicos: solo estás <b>tú</b>, el barbero-cirujano.</p>
-        <p>Tu silla no distingue rango ni fortuna. Por ella pasarán campesinos, monjes, damas delicadas y hasta la temida bruja del bosque. Sacas muelas, cauterizas heridas, pones sanguijuelas, haces sangrías, afeitas greñas, coses carne, mezclas pociones y entablillas huesos rotos.</p>
-        <p>Escucha la queja de cada aldeano, <b>elige la herramienta correcta</b> y cúralo antes de que el dolor lo venza. Atiende a cuantos puedas... porque en cuanto un paciente muera en tu silla, tu reputación caerá para siempre.</p>
+        <p class="lead">Es el año <b>1347</b> y la peste ya asoma tras los montes. En tu aldea no hay médicos: solo estás <b>tú</b>, el barbero-cirujano.</p>
+        <p>Tu silla no distingue rango ni fortuna. Escucha la queja de cada aldeano, <b>elige la herramienta correcta</b> y cúralo antes de que el dolor lo venza. Atiende a cuantos puedas... porque en cuanto un paciente muera en tu silla, tu reputación caerá para siempre.</p>
       </div>
 
       <hr class="divider">
@@ -2262,6 +2263,7 @@ function nextPatient(){
 function startGame(){
   audio();
   $('titleOv').classList.add('hidden');
+  document.body.classList.remove('title-open');
   S.day=1; S.coins=0; S.rep=50; S.potions=3; S.p=null; S.roster=[]; S.qIdx=0;
   S.patientsServed=0; S.startTime=Date.now();
   showDayIntro();
