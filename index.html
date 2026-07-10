@@ -244,21 +244,22 @@
   }
   #overStats{
     background:#000; border:2px solid var(--wood-d); color:var(--parch);
-    padding:8px 12px; margin:8px 0; font-size:13px; text-align:left;
+    padding:8px 12px; margin:8px 0; font-size:13px; text-align:center;
     line-height:1.7;
   }
   #overStats b{ color:var(--gold); }
   /* --- Formulario para guardar puntaje + ranking --- */
-  .save-form{ margin:10px 0; text-align:left; }
+  .save-form{ margin:10px 0; text-align:center; }
   .save-form input[type="text"]{
-    width:100%; box-sizing:border-box; margin-bottom:8px;
+    display:block; width:100%; max-width:280px; box-sizing:border-box;
+    margin:0 auto 8px; text-align:center;
     background:#000; color:var(--parch); border:2px solid var(--wood-d);
     padding:8px 10px; font-family:inherit; font-size:14px;
   }
   .save-form input:focus{ outline:none; border-color:var(--gold); }
-  .country-row{ display:flex; align-items:center; gap:8px; }
-  .country-row input{ flex:1; margin-bottom:8px; text-transform:lowercase; }
-  .flag-preview{ font-size:28px; line-height:1; margin-bottom:8px; }
+  #playerCountry{ text-transform:lowercase; }
+  /* la bandera va debajo del campo de país, centrada */
+  .flag-preview{ display:block; font-size:34px; line-height:1; margin:2px 0 10px; }
   #saveMsg{ margin-top:6px; min-height:16px; line-height:1.5; }
   #saveMsg.ok{ color:var(--gold); }
   #saveMsg.err{ color:var(--blood-l, #ff6b6b); }
@@ -578,7 +579,7 @@
   <!-- GAME OVER -->
   <div class="overlay hidden" id="overOv">
     <div class="card" style="border-color:var(--blood);">
-      <h1>💀 HAS PERDIDO AL PACIENTE 💀</h1>
+      <h1 id="overTitle">💀 HAS MATADO AL PACIENTE 💀</h1>
       <canvas id="deadFaceCv" width="150" height="150"></canvas>
       <p id="overTxt"></p>
       <div id="overStats"></div>
@@ -587,10 +588,8 @@
       <div id="saveForm" class="save-form">
         <p class="small" style="margin:.4rem 0;">✍️ Deja tu marca en el <b>ranking mundial</b>:</p>
         <input id="playerName" type="text" maxlength="24" placeholder="Tu nombre" autocomplete="off" />
-        <div class="country-row">
-          <input id="playerCountry" type="text" maxlength="2" placeholder="País (mx, us, co...)" autocomplete="off" />
-          <span id="flagPreview" class="flag-preview">🏳️</span>
-        </div>
+        <input id="playerCountry" type="text" maxlength="2" placeholder="País (mx, us, co...)" autocomplete="off" />
+        <span id="flagPreview" class="flag-preview">🏳️</span>
         <button class="btn" id="saveScoreBtn">🏆 Guardar en el ranking</button>
         <div id="saveMsg" class="small"></div>
       </div>
@@ -1088,8 +1087,8 @@ function gameOver(p){
   drawDeadFace(p.cfg);
   const elapsed = S.startTime ? Date.now()-S.startTime : 0;
   const isNewRecord = saveBestRecordIfBetter(S.patientsServed, elapsed, S.day);
-  $('overTxt').innerHTML = p.name+' ha vuelto a desmayarse del dolor y esta vez no despierta con agua fría.<br><br>'+
-    'La noticia corre por la aldea: <b>tu reputación como barbero-cirujano queda arruinada.</b>';
+  $('overTitle').innerHTML = '💀 HAS MATADO A '+escapeHtml(p.name).toUpperCase()+' DE DOLOR 💀';
+  $('overTxt').innerHTML = 'La noticia corre por la aldea: <b>tu reputación como barbero-cirujano queda arruinada.</b>';
   $('overStats').innerHTML =
     (isNewRecord? '🏆 <b>¡NUEVO RÉCORD!</b><br>' : '')+
     '📅 Días sobrevividos: <b>'+S.day+'</b><br>'+
