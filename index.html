@@ -68,18 +68,45 @@
     content:''; position:absolute; bottom:-18px; left:35px;
     border:10px solid transparent; border-top-color:var(--ink);
   }
+  /* Botón grande "Cobrar a Paciente" junto al personaje (aparece al curar todo) */
+  #cobrarBig{
+    position:absolute; bottom:12px; right:12px; z-index:5;
+    display:flex; flex-direction:column; align-items:center; gap:2px;
+    background:var(--gold); color:var(--ink);
+    border:3px solid var(--ink); box-shadow:4px 4px 0 #000;
+    font-family:inherit; font-weight:bold; cursor:pointer;
+    padding:12px 16px; font-size:14px; line-height:1.1;
+    animation:cobrarPop .35s ease-out, cobrarGlow 1.4s ease-in-out .35s infinite;
+    touch-action:manipulation;
+  }
+  #cobrarBig .coin{ font-size:26px; line-height:1; }
+  #cobrarBig .lbl{ font-size:12px; letter-spacing:.5px; }
+  #cobrarBig:hover{ background:#f0bd4c; }
+  #cobrarBig:active{ transform:translate(2px,2px); box-shadow:2px 2px 0 #000; }
+  @keyframes cobrarPop{ 0%{ transform:scale(.4); opacity:0; } 100%{ transform:scale(1); opacity:1; } }
+  @keyframes cobrarGlow{ 0%,100%{ box-shadow:4px 4px 0 #000, 0 0 6px var(--gold); } 50%{ box-shadow:4px 4px 0 #000, 0 0 18px var(--gold); } }
   aside{
     flex:1 1 330px; min-width:300px; display:flex; flex-direction:column; gap:8px;
   }
   .panel{background:var(--wood-d); border:3px solid #000; padding:8px;}
   .panel h3{font-size:12px; letter-spacing:2px; color:var(--parch-d); margin-bottom:6px; text-transform:uppercase;}
   #mouth{width:100%; height:auto; background:#1a0d0d; border:2px solid #000;}
-  #tools{display:grid; grid-template-columns:repeat(4,1fr); gap:6px;}
+  /* Caja de herramientas: rejilla de compartimentos separados por "tablas" */
+  #tools{
+    display:grid; grid-template-columns:repeat(4,1fr); gap:0;
+    background:
+      linear-gradient(180deg, #3a2413, #24160b);
+    border:3px solid #000; padding:4px;
+    box-shadow:inset 0 0 0 2px var(--wood-l), inset 0 0 14px #000a;
+  }
   .tool{
-    background:var(--wood); border:3px solid #000; color:var(--parch);
-    font-family:inherit; font-weight:bold; font-size:10px; padding:5px 2px;
+    background:var(--wood); color:var(--parch);
+    /* las divisiones entre compartimentos: bordes claros a la derecha/abajo */
+    border:2px solid #1a0f07;
+    box-shadow:inset 1px 1px 0 #6b452788, inset -2px -2px 0 #00000066;
+    font-family:inherit; font-weight:bold; font-size:10px; padding:6px 2px;
     cursor:pointer; text-align:center; line-height:1.2;
-    touch-action:manipulation;
+    touch-action:manipulation; margin:2px;
   }
   .tool .ico{font-size:17px; display:block;}
   .tool:hover{background:var(--wood-l);}
@@ -378,6 +405,7 @@
     <section id="patientWrap">
       <canvas id="face" width="384" height="416"></canvas>
       <div id="bubble"></div>
+      <button id="cobrarBig" class="hidden"><span class="coin">🪙</span><span class="lbl">Cobrar a Paciente</span></button>
     </section>
 
     <aside>
@@ -399,10 +427,10 @@
       </div>
 
       <div class="panel" id="toolsPanel">
-        <div id="toolsHandle">🧰 <span>HERRAMIENTAS DEL OFICIO</span> <span class="arrow">▲</span></div>
+        <div id="toolsHandle">🧰 <span>CAJA DE HERRAMIENTAS</span> <span class="arrow">▲</span></div>
         <div id="toolsBody">
         <div id="toolsPanelHead">
-          <h3 style="margin:0;">Herramientas del oficio</h3>
+          <h3 style="margin:0;">🧰 Caja de Herramientas</h3>
         </div>
         <div id="tools">
           <button class="tool" data-tool="interrogar" id="interrogarBtn"><span class="ico">💬</span>Interrogar</button>
@@ -416,7 +444,6 @@
           <button class="tool" data-tool="caldero"><span class="ico">⚗️</span>Caldero</button>
           <button class="tool" data-tool="pocion"><span class="ico">🧪</span>Poción <span id="pocionN">x3</span></button>
           <button class="tool" data-tool="trapo"><span class="ico">🧻</span>Trapo</button>
-          <button class="tool" data-tool="cobrar" id="cobrarBtn" disabled><span class="ico">🪙</span>Cobrar</button>
         </div>
         </div>
       </div>
@@ -939,7 +966,13 @@ function hud(){
     $('afflTxt').textContent = a.done+'/'+a.total;
     $('afflfill').style.width = (a.total? a.done/a.total*100 :0)+'%';
     $('pocionN').textContent = 'x'+S.potions;
-    $('cobrarBtn').disabled = !(a.done===a.total);
+    // El botón grande "Cobrar a Paciente" solo aparece cuando todos los
+    // males están curados y el paciente está despierto y jugando.
+    const canCharge = a.total>0 && a.done===a.total && S.p.awake &&
+                      (S.state==='play' || S.state==='mini');
+    $('cobrarBig').classList.toggle('hidden', !canCharge);
+  } else {
+    $('cobrarBig').classList.add('hidden');
   }
 }
 
@@ -1166,6 +1199,13 @@ document.querySelectorAll('.tool').forEach(btn=>{
     updateToolBadge();
     if(S.tool) log('🫳 '+TOOL_INFO[S.tool]);
   });
+});
+
+// Botón grande "Cobrar a Paciente" junto al personaje (fuera de la caja)
+$('cobrarBig').addEventListener('click', ()=>{
+  if(S.state!=='play' && S.state!=='mini') return;
+  closeDrawer();
+  charge();
 });
 
 function usePotion(){
@@ -2370,7 +2410,7 @@ $('startBtn').addEventListener('click', startGame);
 const TUT_STEPS = [
   { tool:'interrogar', need:null,
     title:'Paso 1 — Escucha al paciente',
-    text:'Cada aldeano te dice qué le duele. Pulsa <b>💬 Interrogar</b> para que repita su queja: ahí verás qué males tratar. Puedes volver a preguntarle las veces que quieras.' },
+    text:'Todas tus herramientas están en tu <b>🧰 Caja de Herramientas</b> (el panel de abajo). La primera es <b>💬 Interrogar</b>: púlsala para que el paciente repita qué le duele y sepas qué males tratar. Puedes volver a preguntarle las veces que quieras.' },
   { tool:'tenazas', need:'floja',
     title:'Paso 2 — Muela floja (Tenazas)',
     text:'Selecciona <b>🗜️ Tenazas</b> y pulsa la muela que <b>baila sola</b> en la boca. En el minijuego, pulsa <b>¡TIRAR!</b> cuando la aguja esté en la <b>zona verde</b>.' },
@@ -2401,7 +2441,7 @@ const TUT_STEPS = [
     text:'Un hueso roto se inmoviliza con <b>🦴 Tablillas</b>. Alinea el hueso en la zona verde y luego venda antes de que se afloje.' },
   { tool:'cobrar', need:'_done',
     title:'Paso 10 — ¡Cobra!',
-    text:'¡Curaste todos los males! Pulsa <b>🪙 Cobrar</b> para recibir tu pago. Eso completa la atención de un paciente.' },
+    text:'¡Curaste todos los males! Ahora aparece el botón dorado <b>🪙 Cobrar a Paciente</b> junto al aldeano: púlsalo para recibir tu pago y completar la atención.' },
 ];
 
 // Construye un paciente de tutorial con TODOS los males, uno de cada tipo.
@@ -2488,16 +2528,19 @@ function refreshTutorStep(force){
   const a = afflictions(S.p);
   $('tutorProgress').textContent = '✅ '+a.done+'/'+a.total;
   $('tutorBanner').classList.remove('mini'); // nuevo paso/fase: mostrar la instrucción completa
-  // resaltar la herramienta correspondiente
+  // resaltar la herramienta correspondiente en la caja
   document.querySelectorAll('.tool').forEach(btn=>{
     btn.classList.toggle('tut-hint', btn.dataset.tool===tool);
   });
+  // el paso de cobrar no está en la caja: resaltar el botón grande
+  $('cobrarBig').classList.toggle('tut-hint', tool==='cobrar');
 }
 
 // Se llama cuando el tutorial completa la atención (tras cobrar).
 function finishTutorial(){
   S.tutorial = false;
   document.querySelectorAll('.tool').forEach(b=>b.classList.remove('tut-hint'));
+  $('cobrarBig').classList.remove('tut-hint');
   $('tutorBanner').classList.add('hidden');
   $('titleOv').classList.remove('hidden');
   document.body.classList.add('title-open');
