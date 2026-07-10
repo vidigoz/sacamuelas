@@ -1,0 +1,2267 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>El Sacamuelas</title>
+<style>
+  :root{
+    --night:#1b1320; --wood:#4a2f1d; --wood-d:#2d1a0f; --wood-l:#6b4527;
+    --parch:#e6d3a3; --parch-d:#c9b07a; --ink:#2a1c12;
+    --blood:#b3202b; --gold:#e0a93c; --leech:#3e5d33; --bone:#f5efe0;
+  }
+  *{box-sizing:border-box; margin:0; padding:0; -webkit-user-select:none; user-select:none;}
+  html{height:100%;}
+  body{
+    min-height:100%;
+    background:var(--night);
+    font-family:'Courier New', Courier, monospace;
+    color:var(--parch);
+    display:flex; align-items:flex-start; justify-content:center;
+    padding:8px;
+  }
+  canvas{image-rendering:pixelated; image-rendering:crisp-edges; display:block;}
+  #game{
+    width:100%; max-width:880px;
+    background:linear-gradient(180deg, #241629 0%, #161020 100%);
+    border:6px solid var(--wood-d);
+    outline:3px solid #000;
+    box-shadow:0 0 0 6px var(--wood), 0 18px 50px #000;
+    position:relative;
+    padding:10px;
+  }
+  header{
+    display:flex; justify-content:space-between; align-items:center;
+    background:var(--wood-d); border:3px solid #000; padding:6px 10px;
+    margin-bottom:8px; flex-wrap:wrap; gap:6px;
+  }
+  header .stat{font-weight:bold; font-size:13px; letter-spacing:1px;}
+  header .stat b{color:var(--gold);}
+  .music-btn{
+    background:transparent; border:none; color:var(--parch);
+    font-size:16px; cursor:pointer; padding:0; line-height:1;
+  }
+  .music-btn:hover{ opacity:.8; }
+  #repbar{display:inline-block; width:80px; height:10px; background:#000; border:2px solid var(--parch-d); vertical-align:middle;}
+  #repfill{height:100%; background:var(--gold); width:50%;}
+  main{display:flex; gap:8px; flex-wrap:wrap;}
+  #patientWrap{
+    position:relative; flex:1 1 380px; min-width:300px;
+    background:#0e0a14; border:3px solid #000; outline:2px solid var(--wood);
+    display:flex; align-items:center; justify-content:center; overflow:hidden;
+  }
+  #face{width:100%; max-width:420px; height:auto;}
+  #bubble{
+    position:absolute; bottom:8px; left:8px; right:8px;
+    background:var(--parch); color:var(--ink);
+    border:3px solid var(--ink); padding:8px 10px; font-size:12.5px; font-weight:bold;
+    display:none; box-shadow:4px 4px 0 #000; pointer-events:none;
+  }
+  aside{
+    flex:1 1 330px; min-width:300px; display:flex; flex-direction:column; gap:8px;
+  }
+  .panel{background:var(--wood-d); border:3px solid #000; padding:8px;}
+  .panel h3{font-size:12px; letter-spacing:2px; color:var(--parch-d); margin-bottom:6px; text-transform:uppercase;}
+  #mouth{width:100%; height:auto; background:#1a0d0d; border:2px solid #000;}
+  #tools{display:grid; grid-template-columns:repeat(4,1fr); gap:6px;}
+  .tool{
+    background:var(--wood); border:3px solid #000; color:var(--parch);
+    font-family:inherit; font-weight:bold; font-size:10px; padding:5px 2px;
+    cursor:pointer; text-align:center; line-height:1.2;
+    touch-action:manipulation;
+  }
+  .tool .ico{font-size:17px; display:block;}
+  .tool:hover{background:var(--wood-l);}
+  .tool:active{transform:translate(1px,2px); background:var(--gold); color:var(--ink);}
+  .tool.active{background:var(--gold); color:var(--ink); box-shadow:inset 0 0 0 2px var(--ink);}
+  .tool:disabled{opacity:.35; cursor:not-allowed;}
+  .barwrap{margin-bottom:6px;}
+  .barlabel{font-size:11px; letter-spacing:1px; display:flex; justify-content:space-between;}
+  .bar{height:14px; background:#000; border:2px solid var(--parch-d); margin-top:2px;}
+  .bar > div{height:100%; transition:width .15s steps(6);}
+  #dolorfill{background:linear-gradient(90deg,#7a8f3c,#e0a93c 50%,#b3202b);}
+  #afflfill{background:#7a8f3c;}
+  #miniDolorFill{background:linear-gradient(90deg,#7a8f3c,#e0a93c 50%,#b3202b);}
+  #miniDolorWrap{ background:#000; border:2px solid var(--parch-d); padding:6px 8px; margin-bottom:8px; }
+  #miniDolorWrap .barlabel{ color:var(--parch); font-size:12px; }
+  #log{
+    margin-top:8px; background:#000; border:3px solid var(--wood);
+    padding:6px 10px; font-size:13px; min-height:42px; color:var(--parch);
+  }
+  #log .old{opacity:.45; font-size:11px;}
+  #toolBadge{
+    display:inline-block; margin-top:6px; background:var(--wood); border:2px solid #000;
+    padding:4px 10px; font-size:12px; letter-spacing:.5px;
+  }
+  #toolBadge b{color:var(--gold);}
+  #toolsPanelHead{ display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
+  #toolsHandle{ display:none; }
+  .overlay{
+    position:absolute; inset:0; background:rgba(8,4,12,.93);
+    display:flex; align-items:center; justify-content:center; z-index:10;
+    padding:14px;
+  }
+  .card{
+    background:var(--parch); color:var(--ink); border:4px solid var(--ink);
+    box-shadow:8px 8px 0 #000; padding:16px; max-width:600px; width:100%;
+    text-align:center; max-height:96%; overflow-y:auto;
+    position:relative;
+  }
+  .card h1{font-size:24px; letter-spacing:2px; margin-bottom:4px; color:var(--blood); text-shadow:2px 2px 0 var(--ink);}
+  .card h2{font-size:17px; margin-bottom:8px;}
+  .card p{font-size:12.5px; margin-bottom:8px; line-height:1.5;}
+  .card .small{font-size:11px; opacity:.85;}
+  #gearBtn{
+    position:absolute; top:8px; right:8px; z-index:2;
+    background:var(--wood); color:var(--parch); border:2px solid var(--ink);
+    font-size:18px; width:34px; height:34px; cursor:pointer;
+    box-shadow:2px 2px 0 #000;
+  }
+  #gearBtn:hover{background:var(--wood-l);}
+  .record-box{
+    background:#000; color:var(--gold); border:2px solid var(--wood-d);
+    padding:8px 10px; margin-bottom:12px; font-size:12.5px; font-weight:bold;
+    text-align:left; line-height:1.5;
+  }
+  .settings-row{ text-align:left; margin-bottom:12px; }
+  .settings-row label{ font-size:12px; font-weight:bold; }
+  .settings-row input[type="range"]{ width:100%; margin-top:4px; }
+  #deadFaceCv{
+    display:block; margin:8px auto; background:#0e0a14;
+    border:3px solid var(--blood); box-shadow:3px 3px 0 #000;
+  }
+  #overStats{
+    background:#000; border:2px solid var(--wood-d); color:var(--parch);
+    padding:8px 12px; margin:8px 0; font-size:13px; text-align:left;
+    line-height:1.7;
+  }
+  #overStats b{ color:var(--gold); }
+  /* --- Formulario para guardar puntaje + ranking --- */
+  .save-form{ margin:10px 0; text-align:left; }
+  .save-form input[type="text"]{
+    width:100%; box-sizing:border-box; margin-bottom:8px;
+    background:#000; color:var(--parch); border:2px solid var(--wood-d);
+    padding:8px 10px; font-family:inherit; font-size:14px;
+  }
+  .save-form input:focus{ outline:none; border-color:var(--gold); }
+  .country-row{ display:flex; align-items:center; gap:8px; }
+  .country-row input{ flex:1; margin-bottom:8px; text-transform:lowercase; }
+  .flag-preview{ font-size:28px; line-height:1; margin-bottom:8px; }
+  #saveMsg{ margin-top:6px; min-height:16px; line-height:1.5; }
+  #saveMsg.ok{ color:var(--gold); }
+  #saveMsg.err{ color:var(--blood-l, #ff6b6b); }
+  .leaderboard{
+    background:#000; border:2px solid var(--gold); color:var(--parch);
+    padding:8px 10px; margin:8px 0; text-align:left;
+  }
+  .leaderboard h2{ color:var(--gold); text-align:center; }
+  .lb-row{
+    display:flex; align-items:center; gap:8px; padding:4px 2px;
+    font-size:13px; border-bottom:1px solid #2a2320;
+  }
+  .lb-row:last-child{ border-bottom:none; }
+  .lb-rank{ width:26px; font-weight:bold; color:var(--gold); text-align:right; }
+  .lb-flag{ font-size:18px; }
+  .lb-name{ flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .lb-stats{ font-size:12px; color:#c9b98f; white-space:nowrap; }
+  .lb-row.me{ background:#241d0e; }
+  .btn{
+    background:var(--blood); color:var(--parch); border:3px solid var(--ink);
+    font-family:inherit; font-weight:bold; font-size:15px; letter-spacing:1px;
+    padding:10px 22px; cursor:pointer; box-shadow:4px 4px 0 var(--ink);
+    margin-top:8px; touch-action:manipulation;
+  }
+  .btn:hover{transform:translate(1px,1px); box-shadow:3px 3px 0 var(--ink);}
+  .btn.gold{background:var(--gold); color:var(--ink);}
+  .btn.sec{background:var(--wood); color:var(--parch); font-size:12px; padding:8px 14px;}
+  #miniBtn{touch-action:none;}
+  #miniCv{background:#15101c; border:3px solid var(--ink); width:100%; height:auto; margin:8px 0; cursor:pointer; touch-action:none;}
+  .hidden{display:none !important;}
+  #faintOv .card{background:#1b1320; color:var(--parch); border-color:var(--gold);}
+  #faintOv h2{color:#7ec8ff;}
+  #dayOv .card{background:#141020; color:var(--parch); border-color:var(--gold);}
+  #dayOv h1{color:var(--gold); text-shadow:2px 2px 0 #000;}
+  footer.credits{font-size:10px; opacity:.5; text-align:center; margin-top:6px; letter-spacing:1px;}
+  @media (max-width:700px){
+    body{ padding:4px; }
+    #game{ padding:6px; border-width:4px; }
+    #topBar{
+      position:sticky; top:0; z-index:4; background:#241629;
+      margin:-6px -6px 6px; padding:6px 6px 4px;
+    }
+    header{
+      display:grid; grid-template-columns:1fr 1fr; gap:4px 8px;
+      padding:6px 8px;
+      background:var(--wood-d);
+    }
+    header .stat{ font-size:11px; }
+    header .repStat{ grid-column:1 / -1; }
+    #repbar{ width:60px; }
+    #log{
+      margin-top:4px;
+      font-size:12px; min-height:0; padding:5px 8px;
+    }
+    #log .old{ display:none; } /* solo el mensaje más reciente, para ahorrar espacio */
+    #toolBadge{ display:block; margin-top:4px; font-size:11px; text-align:center; }
+    body{ padding-bottom:52px; }
+    main{ gap:6px; }
+    #patientWrap, aside{ min-width:0; flex-basis:100%; }
+    #face{ max-width:280px; }
+    .panel{ padding:6px; }
+
+    /* ---- Barra-tirador de herramientas (se desliza de abajo hacia arriba) ---- */
+    #toolsPanel{
+      position:fixed; left:0; right:0; bottom:0; margin:0 auto;
+      max-width:880px; width:100%; padding:0;
+      border-radius:12px 12px 0 0; border:3px solid #000; border-bottom:none;
+      box-shadow:0 -8px 24px #000c;
+      transform:translateY(calc(100% - 48px)); transition:transform .3s ease;
+      z-index:6; max-height:70vh;
+      display:flex; flex-direction:column; overflow:hidden;
+    }
+    #toolsPanel.open{ transform:translateY(0); }
+    #toolsHandle{
+      display:flex; align-items:center; justify-content:center; gap:8px;
+      flex:0 0 48px; height:48px;
+      background:linear-gradient(180deg, var(--wood-l), var(--wood) 70%, var(--wood-d));
+      border-bottom:3px solid #000;
+      color:var(--parch); font-weight:bold; font-size:12px; letter-spacing:1.5px;
+      cursor:pointer; touch-action:manipulation;
+      text-shadow:1px 1px 0 #000;
+    }
+    #toolsHandle .arrow{ display:inline-block; transition:transform .3s ease; }
+    #toolsPanel.open #toolsHandle .arrow{ transform:rotate(180deg); }
+    #toolsBody{ padding:8px; overflow-y:auto; }
+    #toolsPanelHead{ display:none; }
+    #tools{ grid-template-columns:repeat(3,1fr); gap:5px; }
+    .tool{ font-size:9.5px; padding:6px 2px; }
+    .tool .ico{ font-size:16px; }
+
+    footer.credits{ display:none; }
+
+    .card{ padding:12px; }
+    .card h1{ font-size:19px; }
+    .card h2{ font-size:15px; }
+    .btn{ font-size:13px; padding:9px 16px; }
+  }
+  @media (max-width:380px){
+    #tools{ grid-template-columns:repeat(2,1fr); }
+    header .stat{ font-size:10px; }
+  }
+</style>
+</head>
+<body>
+<div id="game">
+  <div id="topBar">
+  <header>
+    <span class="stat">📅 <b id="hudDay">Día 1</b></span>
+    <span class="stat">⏱️ <b id="hudTime">00:00</b></span>
+    <span class="stat">🚪 <b id="hudQueue">0/0</b></span>
+    <span class="stat">👤 <b id="hudPatient">—</b></span>
+    <span class="stat">🪙 <b id="hudCoins">0</b></span>
+    <button class="stat music-btn" id="headerGearBtn" title="Ajustes">⚙️</button>
+    <span class="stat repStat">⭐ <span id="repbar"><span id="repfill" style="display:block"></span></span></span>
+  </header>
+
+  <div id="log"><span id="logNew">Bienvenido a la barbería.</span><br><span class="old" id="logOld"></span></div>
+  <div id="toolBadge" class="hidden">🫳 Herramienta: <b id="toolBadgeName">—</b></div>
+  </div>
+
+  <main>
+    <section id="patientWrap">
+      <canvas id="face" width="384" height="416"></canvas>
+      <div id="bubble"></div>
+    </section>
+
+    <aside>
+      <div class="panel">
+        <h3>Boca del paciente</h3>
+        <canvas id="mouth" width="360" height="150"></canvas>
+      </div>
+
+      <div class="panel">
+        <h3>Estado</h3>
+        <div class="barwrap">
+          <div class="barlabel"><span>😖 Dolor</span><span id="dolorTxt">0</span></div>
+          <div class="bar"><div id="dolorfill" style="width:0%"></div></div>
+        </div>
+        <div class="barwrap">
+          <div class="barlabel"><span>📜 Males curados</span><span id="afflTxt">0/0</span></div>
+          <div class="bar"><div id="afflfill" style="width:0%"></div></div>
+        </div>
+      </div>
+
+      <div class="panel" id="toolsPanel">
+        <div id="toolsHandle">🧰 <span>HERRAMIENTAS DEL OFICIO</span> <span class="arrow">▲</span></div>
+        <div id="toolsBody">
+        <div id="toolsPanelHead">
+          <h3 style="margin:0;">Herramientas del oficio</h3>
+        </div>
+        <div id="tools">
+          <button class="tool" data-tool="interrogar" id="interrogarBtn"><span class="ico">💬</span>Interrogar</button>
+          <button class="tool" data-tool="tenazas"><span class="ico">🗜️</span>Tenazas</button>
+          <button class="tool" data-tool="hierro"><span class="ico">🔥</span>Hierro</button>
+          <button class="tool" data-tool="sanguijuelas"><span class="ico">🪱</span>Sanguij.</button>
+          <button class="tool" data-tool="lanceta"><span class="ico">🔪</span>Sangría</button>
+          <button class="tool" data-tool="navaja"><span class="ico">🪒</span>Navaja</button>
+          <button class="tool" data-tool="aguja"><span class="ico">🪡</span>Aguja</button>
+          <button class="tool" data-tool="tablillas"><span class="ico">🦴</span>Tablillas</button>
+          <button class="tool" data-tool="caldero"><span class="ico">⚗️</span>Caldero</button>
+          <button class="tool" data-tool="pocion"><span class="ico">🧪</span>Poción <span id="pocionN">x3</span></button>
+          <button class="tool" data-tool="trapo"><span class="ico">🧻</span>Trapo</button>
+          <button class="tool" data-tool="cobrar" id="cobrarBtn" disabled><span class="ico">🪙</span>Cobrar</button>
+        </div>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <footer class="credits">EL SACAMUELAS · anno domini 1347</footer>
+
+
+  <!-- TITLE -->
+  <div class="overlay" id="titleOv">
+    <div class="card">
+      <button id="gearBtn" title="Ajustes">⚙️</button>
+      <h1>🦷 EL SACAMUELAS 🦷</h1>
+      <p>Es el año <b>1347</b>, eres el barbero-cirujano del pueblo: sacas muelas, cauterizas, pones sanguijuelas, haces sangrías, afeitas, coses heridas, preparas pociones y entablillas huesos. Toda la aldea pasará por tu silla.</p>
+      <p>Aprende a usar tus herramientas para sanar a la mayor cantidad de aldeanos posible.</p>
+      <p class="small">
+        🗜️ <b>Tenazas</b>: arranca muelas malas · 🔥 <b>Hierro</b>: cauteriza huecos sangrantes<br>
+        🪱 <b>Sanguijuelas</b>: flemones · 🔪 <b>Lanceta</b>: sangría de humores<br>
+        🪒 <b>Navaja</b>: afeita greñas (¡cuidado con las verrugas!) · 🪡 <b>Aguja</b>: cose heridas<br>
+        ⚗️ <b>Caldero</b>: prepara remedios con la receta correcta · 🦴 <b>Tablillas</b>: huesos rotos<br>
+        🧪 <b>Poción</b>: calma el dolor · 💬 <b>Interrogar</b>: repite la pista del paciente (1 vez)
+      </p>
+      <button class="btn" id="startBtn">⚔️ ABRIR LA BARBERÍA</button>
+    </div>
+  </div>
+
+  <!-- AJUSTES -->
+  <div class="overlay hidden" id="settingsOv">
+    <div class="card">
+      <h2>⚙️ Ajustes</h2>
+      <div id="recordBox" class="record-box"></div>
+      <div class="settings-row">
+        <button class="btn sec" id="musicToggleBtn" style="width:100%;">🔊 Música: Activada</button>
+      </div>
+      <div class="settings-row">
+        <label for="volSlider">🎚️ Volumen: <span id="volLabel">10%</span></label>
+        <input type="range" id="volSlider" min="0" max="100" value="10">
+      </div>
+      <div class="settings-row">
+        <button class="btn sec" id="sfxToggleBtn" style="width:100%;">🔔 Sonidos de juego: Activados</button>
+      </div>
+      <button class="btn" id="settingsCloseBtn">Cerrar</button>
+    </div>
+  </div>
+
+  <audio id="bgMusic" preload="none"></audio>
+
+  <!-- DAY INTRO -->
+  <div class="overlay hidden" id="dayOv">
+    <div class="card">
+      <h1 id="dayTitle">☀️ DÍA 1</h1>
+      <p id="dayTxt"></p>
+      <button class="btn gold" id="dayBtn">🚪 Abrir la puerta</button>
+    </div>
+  </div>
+
+  <!-- MINIGAME -->
+  <div class="overlay hidden" id="miniOv">
+    <div class="card">
+      <h2 id="miniTitle">Minijuego</h2>
+      <div class="barwrap" id="miniDolorWrap">
+        <div class="barlabel"><span>😖 Dolor del paciente</span><span id="miniDolorTxt">0</span></div>
+        <div class="bar"><div id="miniDolorFill" style="width:0%"></div></div>
+      </div>
+      <p class="small" id="miniDesc"></p>
+      <canvas id="miniCv" width="480" height="240"></canvas>
+      <button class="btn" id="miniBtn">¡TIRAR!</button>
+      <button class="btn sec" id="miniCancel">✖ Soltar herramienta</button>
+    </div>
+  </div>
+
+  <!-- FAINT -->
+  <div class="overlay hidden" id="faintOv">
+    <div class="card">
+      <h2>💫 ¡SE HA DESMAYADO! 💫</h2>
+      <p id="faintTxt">El dolor pudo con él.</p>
+      <button class="btn" id="reviveBtn">💧 ¡CUBO DE AGUA DEL POZO!</button>
+    </div>
+  </div>
+
+  <!-- PATIENT DONE -->
+  <div class="overlay hidden" id="payOv">
+    <div class="card">
+      <h2 id="payTitle">¡Paciente curado!</h2>
+      <p id="payTxt"></p>
+      <button class="btn gold" id="payBtn">Siguiente paciente ➜</button>
+    </div>
+  </div>
+
+  <!-- END DAY -->
+  <div class="overlay hidden" id="endOv">
+    <div class="card">
+      <h1>🌙 FIN DE LA JORNADA</h1>
+      <p id="endTxt"></p>
+      <button class="btn" id="againBtn">☀️ Siguiente día</button>
+    </div>
+  </div>
+
+  <!-- GAME OVER -->
+  <div class="overlay hidden" id="overOv">
+    <div class="card" style="border-color:var(--blood);">
+      <h1>💀 HAS PERDIDO AL PACIENTE 💀</h1>
+      <canvas id="deadFaceCv" width="150" height="150"></canvas>
+      <p id="overTxt"></p>
+      <div id="overStats"></div>
+
+      <!-- Formulario para guardar en el ranking global -->
+      <div id="saveForm" class="save-form">
+        <p class="small" style="margin:.4rem 0;">✍️ Deja tu marca en el <b>ranking mundial</b>:</p>
+        <input id="playerName" type="text" maxlength="24" placeholder="Tu nombre" autocomplete="off" />
+        <div class="country-row">
+          <input id="playerCountry" type="text" maxlength="2" placeholder="País (mx, us, co...)" autocomplete="off" />
+          <span id="flagPreview" class="flag-preview">🏳️</span>
+        </div>
+        <button class="btn" id="saveScoreBtn">🏆 Guardar en el ranking</button>
+        <div id="saveMsg" class="small"></div>
+      </div>
+
+      <!-- Ranking global (Top 10) -->
+      <div id="leaderboard" class="leaderboard hidden">
+        <h2 style="margin:.5rem 0;font-size:1.1rem;">🏆 Ranking mundial (Top 10)</h2>
+        <div id="lbBody" class="lb-body"></div>
+      </div>
+
+      <button class="btn" id="showLbBtn" style="margin-top:.4rem;">📊 Ver ranking</button>
+      <button class="btn" id="restartBtn">🔄 Empezar de nuevo</button>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+// ============================== UTILIDADES ==============================
+const $ = id => document.getElementById(id);
+const clamp = (v,a,b)=> Math.max(a, Math.min(b,v));
+const rnd = (a,b)=> a + Math.random()*(b-a);
+const irnd = (a,b)=> Math.floor(rnd(a,b+1));
+function shuffle(arr){ const a=arr.slice(); for(let i=a.length-1;i>0;i--){ const j=irnd(0,i); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+
+let AC = null;
+function audio(){ if(!AC){ try{ AC = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } return AC; }
+function beep(freq, dur, type, vol){
+  if(!S.sfxOn) return;
+  const ac = audio(); if(!ac) return;
+  const o = ac.createOscillator(), g = ac.createGain();
+  o.type = type||'square'; o.frequency.value = freq;
+  g.gain.value = vol||0.04;
+  o.connect(g); g.connect(ac.destination);
+  const t = ac.currentTime;
+  g.gain.setValueAtTime(vol||0.04, t);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.start(t); o.stop(t + dur);
+}
+function sndScream(){ beep(880,.08,'sawtooth',.05); setTimeout(()=>beep(660,.1,'sawtooth',.05),70); setTimeout(()=>beep(440,.18,'sawtooth',.05),150); }
+function sndPop(){ beep(220,.05,'square',.06); setTimeout(()=>beep(520,.08,'square',.06),50); }
+function sndCoin(){ beep(987,.06,'square',.05); setTimeout(()=>beep(1318,.12,'square',.05),60); }
+function sndSizzle(){ beep(120,.25,'sawtooth',.04); }
+function sndFail(){ beep(180,.2,'triangle',.06); setTimeout(()=>beep(130,.3,'triangle',.06),120); }
+function sndSnip(){ beep(1400,.04,'square',.04); }
+function sndCrack(){ beep(90,.12,'square',.07); setTimeout(()=>beep(70,.15,'square',.06),80); }
+function sndBubble(){ beep(240,.09,'sine',.05); setTimeout(()=>beep(320,.09,'sine',.05),90); }
+
+// ============================== MÚSICA DE FONDO ==============================
+const TRACKS = [
+  {file:'CD1_-_Cirugia.mp3', name:'Cirugía'},
+  {file:'CD1_-_Extraccion.mp3', name:'Extracción'},
+  {file:'CD1_-_Sangrado.mp3', name:'Sangrado'},
+  {file:'CD1_-_Urgencia.mp3', name:'Urgencia'},
+];
+let lastTrackIdx = -1;
+function pickRandomTrack(){
+  let idx;
+  do{ idx = irnd(0, TRACKS.length-1); } while(TRACKS.length>1 && idx===lastTrackIdx);
+  lastTrackIdx = idx;
+  return TRACKS[idx];
+}
+function playDayMusic(){
+  const audio = $('bgMusic');
+  const track = pickRandomTrack();
+  audio.src = track.file;
+  audio.volume = S.musicVolume;
+  if(S.musicOn){ audio.play().catch(()=>{}); }
+}
+$('bgMusic').addEventListener('ended', ()=>{ if(S.musicOn) playDayMusic(); });
+
+// ============================== AJUSTES Y RÉCORD (localStorage) ==============================
+function loadSettings(){
+  try{
+    const raw = localStorage.getItem('sacamuelas_settings');
+    if(raw) return JSON.parse(raw);
+  }catch(e){}
+  return null;
+}
+function saveSettings(){
+  try{ localStorage.setItem('sacamuelas_settings', JSON.stringify({musicOn:S.musicOn, volume:S.musicVolume, sfxOn:S.sfxOn})); }catch(e){}
+}
+function loadBestRecord(){
+  try{
+    const raw = localStorage.getItem('sacamuelas_best_record');
+    if(raw) return JSON.parse(raw);
+  }catch(e){}
+  return null;
+}
+function saveBestRecordIfBetter(patients, timeMs, days){
+  const cur = loadBestRecord();
+  const better = !cur || patients>cur.patients || (patients===cur.patients && timeMs<cur.timeMs);
+  if(better){
+    try{ localStorage.setItem('sacamuelas_best_record', JSON.stringify({patients, timeMs, days})); }catch(e){}
+    return true;
+  }
+  return false;
+}
+function renderRecordBox(){
+  const rec = loadBestRecord();
+  $('recordBox').innerHTML = rec
+    ? '🏆 Récord a vencer: <b>'+rec.patients+' pacientes</b> atendidos en <b>'+formatTime(rec.timeMs)+'</b> (llegaste al día '+rec.days+')'
+    : '🏆 Aún no tienes récord. ¡Atiende pacientes para dejar tu marca!';
+}
+function initSettingsFromStorage(){
+  const saved = loadSettings();
+  if(saved){
+    if(typeof saved.musicOn==='boolean') S.musicOn = saved.musicOn;
+    if(typeof saved.volume==='number') S.musicVolume = clamp(saved.volume,0,1);
+    if(typeof saved.sfxOn==='boolean') S.sfxOn = saved.sfxOn;
+  }
+}
+
+// ============================== RANKING GLOBAL (Neon vía Netlify) ==============================
+// Convierte un código de país de 2 letras (ej "mx") en emoji de bandera 🇲🇽.
+// Usa los "regional indicator symbols" de Unicode. Si no es válido, devuelve 🏳️.
+function countryToFlag(code){
+  if(typeof code!=='string') return '🏳️';
+  code = code.trim().toLowerCase();
+  if(!/^[a-z]{2}$/.test(code)) return '🏳️';
+  const A = 0x1F1E6; // 🇦
+  const first  = A + (code.charCodeAt(0) - 97);
+  const second = A + (code.charCodeAt(1) - 97);
+  return String.fromCodePoint(first, second);
+}
+
+// Recuerda el último nombre/país usado para no re-escribirlo cada partida
+function loadLastPlayer(){
+  try{ const raw = localStorage.getItem('sacamuelas_player'); if(raw) return JSON.parse(raw); }catch(e){}
+  return null;
+}
+function saveLastPlayer(name, country){
+  try{ localStorage.setItem('sacamuelas_player', JSON.stringify({name, country})); }catch(e){}
+}
+
+// Envía el puntaje al ranking global. Devuelve {ok, rank} o {ok:false, error}.
+async function submitScore(name, country, patients, timeMs){
+  try{
+    const res = await fetch('/api/save-score', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify({ name, country, patients, timeMs }),
+    });
+    const data = await res.json();
+    if(!res.ok) return { ok:false, error: data.error || 'Error al guardar' };
+    return { ok:true, rank: data.rank };
+  }catch(e){
+    return { ok:false, error:'Sin conexión con el servidor' };
+  }
+}
+
+// Trae el Top 10 y lo pinta. `mine` = {name,country,patients,timeMs} para resaltar tu fila.
+async function loadLeaderboard(mine){
+  const body = $('lbBody');
+  body.innerHTML = '<div class="small">Cargando ranking…</div>';
+  $('leaderboard').classList.remove('hidden');
+  try{
+    const res = await fetch('/api/leaderboard');
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.error||'Error');
+    const scores = data.scores || [];
+    if(scores.length===0){
+      body.innerHTML = '<div class="small">Aún no hay puntajes. ¡Sé el primero!</div>';
+      return;
+    }
+    let matched = false;
+    body.innerHTML = scores.map((s,i)=>{
+      const isMe = !matched && mine && s.name===mine.name && s.patients===mine.patients && s.timeMs===mine.timeMs;
+      if(isMe) matched = true;
+      const medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1)+'.';
+      return '<div class="lb-row'+(isMe?' me':'')+'">'+
+        '<span class="lb-rank">'+medal+'</span>'+
+        '<span class="lb-flag">'+countryToFlag(s.country)+'</span>'+
+        '<span class="lb-name">'+escapeHtml(s.name)+'</span>'+
+        '<span class="lb-stats">🩺'+s.patients+' · ⏱️'+formatTime(s.timeMs)+'</span>'+
+      '</div>';
+    }).join('');
+  }catch(e){
+    body.innerHTML = '<div class="small" style="color:#ff6b6b;">No se pudo cargar el ranking.</div>';
+  }
+}
+
+// Evita inyección de HTML al pintar el nombre en el ranking
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, c => (
+    {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]
+  ));
+}
+
+// ============================== MALES (AILMENTS) ==============================
+const AILDEF = {
+  podrida:{ tooth:true, w:3,   frase:'una muela negra que me late' },
+  floja:  { tooth:true, w:2,   frase:'otra muela que baila sola' },
+  flemon: { w:2,               frase:'un flemón como un membrillo' },
+  humores:{ w:2,               frase:'los humores revueltos' },
+  grenas: { w:2,               frase:'unas greñas y barba de oso' },
+  herida: { w:2,               frase:'una herida abierta en la frente' },
+  tripas: { w:2,               frase:'las tripas embrujadas' },
+  hueso:  { w:1.5,             frase:'el brazo roto' },
+};
+
+// ============================== PERSONAJES ==============================
+// hat: none | toca | tonsura | panuelo | casco | sombrero | bruja | capucha | capuchaRey
+const CHARS = [
+  { id:'bartolo', name:'Bartolo el Herrero',
+    greet:'"¡Maese barbero! ¡Llevo tres días sin dormir!',
+    skin:'#d9a06b', hair:'#4a2f1d', clothes:'#5a5a5a', clothes2:'#3a3a3a',
+    hat:'none', beard:true, painRate:0.35, drama:0.8,
+    ouch:['¡AAAGH!','¡POR THOR!','¡MI YUNQUE!','¡GRRRAAH!'] },
+  { id:'urraca', name:'Doña Urraca',
+    greet:'"¡Ay, barbero, me muero! ¡Y soy MUY delicada!',
+    skin:'#ecc9a0', hair:'#888888', clothes:'#7a3550', clothes2:'#5a2238',
+    hat:'toca', painRate:0.85, drama:1.6,
+    ouch:['¡AAAAAAAY!','¡ME MUEROOO!','¡SOCORRO!','¡QUÉ BRUTO!','¡VIRGEN SANTA!'] },
+  { id:'gula', name:'Fray Gula',
+    greet:'"Hermano barbero... el Señor me castiga por el mazapán.',
+    skin:'#e0b487', hair:'#5a4530', clothes:'#6b4a2a', clothes2:'#4a3018',
+    hat:'tonsura', painRate:0.5, drama:1.1, wide:true,
+    ouch:['¡MISERICORDIA!','¡PEQUÉ, LO ADMITO!','¡AAAMÉN... digo, AAAY!','¡SANTO CIELO!'] },
+  { id:'sancho', name:'Sancho el Porquero',
+    greet:'"Buenas, maese... vengo oliendo a cochino, perdone.',
+    skin:'#e2b088', hair:'#d8b04c', clothes:'#7a6a3c', clothes2:'#5a4c28',
+    hat:'none', freckles:true, painRate:0.45, drama:1.0,
+    ouch:['¡MIS COCHINOS!','¡AYYY!','¡MADRE MÍA!','¡UIIII!'] },
+  { id:'tomasa', name:'Vieja Tomasa',
+    greet:'"Muchacho, yo ya venía aquí antes de que nacieras.',
+    skin:'#e8cfae', hair:'#c8c8c4', clothes:'#4a4a3a', clothes2:'#32321f',
+    hat:'panuelo', hatColor:'#8a4a5a', wrinkles:true, gapTeeth:true, painRate:0.3, drama:1.2,
+    ouch:['¡DEMONIO DE HOMBRE!','¡EN MIS TIEMPOS NO DOLÍA!','¡AAAY!','¡MOCOSO!'] },
+  { id:'rodrigo', name:'Rodrigo el Escudero',
+    greet:'"Barbero, vengo del torneo. No preguntéis quién ganó.',
+    skin:'#d8a878', hair:'#3a2a1a', clothes:'#5a6a7a', clothes2:'#3e4a56',
+    hat:'casco', painRate:0.4, drama:0.7,
+    ouch:['¡POR EL REY!','¡ARGH!','¡ESO NI EN BATALLA!','¡MI HONOR!'] },
+  { id:'aldonza', name:'Aldonza la Tabernera',
+    greet:'"Barbero, arréglame rápido que la taberna no se sirve sola.',
+    skin:'#e6bc92', hair:'#a83a22', clothes:'#6a4a2a', clothes2:'#4a3018',
+    hat:'none', blush:true, painRate:0.5, drama:1.1,
+    ouch:['¡TE CORTO EL VINO!','¡BESTIA!','¡AY MIS JARRAS!','¡SERÁS BRUTO!'] },
+  { id:'pedro', name:'Pedro el Peregrino',
+    greet:'"La paz sea contigo, barbero. El Camino me ha destrozado.',
+    skin:'#d9ab7c', hair:'#6a5a42', clothes:'#8a7a5c', clothes2:'#665a40',
+    hat:'sombrero', mustache:true, painRate:0.45, drama:0.9,
+    ouch:['¡SANTIAGO BENDITO!','¡AY, CAMINO CRUEL!','¡UUUY!','¡POR LAS RELIQUIAS!'] },
+  { id:'inigo', name:'Maese Íñigo el Sastre',
+    greet:'"Le exijo delicadeza. Estas manos cosen para condes.',
+    skin:'#e8c8a4', hair:'#2a2a2a', clothes:'#3a5a4a', clothes2:'#284034',
+    hat:'none', mustache:true, painRate:0.6, drama:1.3,
+    ouch:['¡QUÉ POCA DELICADEZA!','¡MIS PESPUNTES!','¡AAAH!','¡SALVAJE!'] },
+  { id:'gunther', name:'Gunther el Mercenario',
+    greet:'"Tú. Arregla esto. Sin charla.',
+    skin:'#c99a6e', hair:'#6a5a3a', clothes:'#4a4038', clothes2:'#322a24',
+    hat:'none', eyepatch:true, scar:true, beard:true, painRate:0.25, drama:0.4,
+    ouch:['grr.','...duele.','¡JA! Casi lo siento.','hmpf.'] },
+  // ---- RAROS ----
+  { id:'verdugo', name:'El Verdugo', rare:true, famaMult:2,
+    greet:'"...Tengo males. Arréglalos. No preguntes por las manchas.',
+    skin:'#c9a078', hair:'#111', clothes:'#1c1c22', clothes2:'#0e0e12',
+    hat:'capucha', painRate:0.2, drama:0.15,
+    ouch:['...','(silencio)','hm.'] },
+  { id:'bruja', name:'Morgana la Bruja', rare:true,
+    greet:'"Sé lo que susurran de mí. Cúrame bien y te bendeciré, barbero.',
+    skin:'#e0d0b0', hair:'#3a3a3a', clothes:'#3a5a3c', clothes2:'#26402a',
+    hat:'bruja', wrinkles:true, painRate:0.4, drama:1.0,
+    ouch:['¡TE CONVERTIRÉ EN SAPO!','¡MALDITO SEAS!','¡AY MIS VERRUGAS!'] },
+  { id:'rey', name:'??? (huele a perfume caro)', rare:true, payMult:2,
+    greet:'"Ejem. Soy un... humilde campesino. Atiéndeme con TODO tu esmero.',
+    skin:'#ecd0ac', hair:'#8a6a3a', clothes:'#2a2038', clothes2:'#1a1426',
+    hat:'capuchaRey', mustache:true, painRate:0.9, drama:2.2,
+    ouch:['¡¿SABÉIS QUIÉN SOY?!','¡GUARDIAS!... digo, ¡AY!','¡INAUDITO!','¡ESTO ES TRAICIÓN!'] },
+];
+const REGULARS = CHARS.filter(c=>!c.rare);
+const RARES = CHARS.filter(c=>c.rare);
+
+// ============================== ESTADO ==============================
+const S = {
+  state:'title', day:1, coins:0, coinsDay:0, rep:50, potions:3,
+  roster:[], qIdx:0, p:null, tool:null, splash:0,
+  t:0, shake:0, scream:0, blink:0, blinkT:rnd(120,260),
+  floats:[], splats:[], msgOld:'',
+  patientsServed:0, startTime:null,
+  musicOn:true, musicVolume:0.1, sfxOn:true,
+};
+
+function dayPatientCount(d){
+  const base = clamp(2+d, 3, 6);
+  const famaBonus = S.rep>=75 ? 2 : S.rep>=50 ? 1 : 0; // la buena fama atrae más clientela
+  return clamp(base+famaBonus, 3, 8);
+}
+function buildRoster(d){
+  const n = dayPatientCount(d);
+  const roster = shuffle(REGULARS).slice(0, n);
+  if(d>=2 && Math.random()<0.45){
+    let pool = RARES.filter(r=> r.id!=='rey' || d>=3);
+    const r = pool[irnd(0, pool.length-1)];
+    roster[irnd(0, roster.length-1)] = r;
+  }
+  return roster;
+}
+function genAilments(d){
+  const mins=[1,2,2,3], min=mins[Math.min(d,4)-1], max=Math.min(1+d,5);
+  const n = irnd(min,max);
+  const counts={}, out=[];
+  let guard=0;
+  const keys=Object.keys(AILDEF);
+  while(out.length<n && guard++<80){
+    // sorteo ponderado
+    let tot=0; keys.forEach(k=>tot+=AILDEF[k].w);
+    let r=Math.random()*tot, pick=keys[0];
+    for(const k of keys){ r-=AILDEF[k].w; if(r<=0){ pick=k; break; } }
+    const c=counts[pick]||0;
+    const maxC = (pick==='podrida'||pick==='floja')? 2 : 1;
+    if(c>=maxC) continue;
+    counts[pick]=c+1;
+    out.push({type:pick, done:false, tooth:-1});
+  }
+  return out;
+}
+function makePatient(cfg, d){
+  const p = {
+    cfg, name:cfg.name,
+    dolor: clamp(irnd(20,35)+(d-1)*2, 0, 50),
+    awake:true,
+    teeth: Array.from({length:8}, ()=>({status:'s'})),
+    ailments: genAilments(d),
+    faintCount: 0,
+    wet: 0,
+    painRate: cfg.painRate*(1+0.1*(d-1)),
+  };
+  // huecos cosméticos de la Vieja Tomasa
+  let slots = shuffle([0,1,2,3,4,5,6,7]);
+  if(cfg.gapTeeth){ p.teeth[slots.pop()].status='vacio'; p.teeth[slots.pop()].status='vacio'; }
+  p.ailments.forEach(a=>{
+    if(AILDEF[a.type].tooth){
+      const i = slots.pop();
+      if(i===undefined){ a.done=true; return; } // sin hueco disponible (rarísimo)
+      a.tooth=i; p.teeth[i].status=a.type;
+    }
+  });
+  return p;
+}
+function pending(p,type){ return p.ailments.some(a=>a.type===type && !a.done); }
+function resolveAil(p,type,tooth){
+  const a = p.ailments.find(a=> a.type===type && !a.done && (tooth===undefined || a.tooth===tooth));
+  if(a) a.done=true;
+}
+function afflictions(p){
+  return { total:p.ailments.length, done:p.ailments.filter(a=>a.done).length };
+}
+function introLine(p){
+  const frases = p.ailments.map(a=>AILDEF[a.type].frase);
+  let lista = frases.length===1? frases[0] : frases.slice(0,-1).join(', ')+' y '+frases[frases.length-1];
+  return p.cfg.greet+' Tengo '+lista+'."';
+}
+
+// ============================== LOG / HUD ==============================
+function log(msg){
+  S.msgOld = $('logNew').textContent;
+  $('logNew').textContent = msg;
+  $('logOld').textContent = S.msgOld;
+}
+function float(txt,color,x,y){
+  S.floats.push({txt, color:color||'#fff', x:x!==undefined?x:rnd(120,260), y:y!==undefined?y:140, life:70});
+}
+function formatTime(ms){
+  const totalSec = Math.floor(ms/1000);
+  const h = Math.floor(totalSec/3600);
+  const m = Math.floor((totalSec%3600)/60);
+  const s = totalSec%60;
+  const pad=n=>String(n).padStart(2,'0');
+  return h>0 ? (h+':'+pad(m)+':'+pad(s)) : (pad(m)+':'+pad(s));
+}
+function hud(){
+  $('hudDay').textContent = 'Día '+S.day;
+  $('hudCoins').textContent = S.coins;
+  $('hudQueue').textContent = S.roster.length? (S.qIdx+1)+'/'+S.roster.length : '0/0';
+  $('hudPatient').textContent = S.p ? S.p.name : '—';
+  $('repfill').style.width = clamp(S.rep,0,100)+'%';
+  if(S.startTime && S.state!=='over'){ $('hudTime').textContent = formatTime(Date.now()-S.startTime); }
+  if(S.p){
+    $('dolorTxt').textContent = Math.round(S.p.dolor);
+    $('dolorfill').style.width = clamp(S.p.dolor,0,100)+'%';
+    const a = afflictions(S.p);
+    $('afflTxt').textContent = a.done+'/'+a.total;
+    $('afflfill').style.width = (a.total? a.done/a.total*100 :0)+'%';
+    $('pocionN').textContent = 'x'+S.potions;
+    $('cobrarBtn').disabled = !(a.done===a.total);
+  }
+}
+
+// ============================== DOLOR / DESMAYO ==============================
+function hurt(amount, silent){
+  const p = S.p; if(!p) return;
+  p.dolor = clamp(p.dolor + amount*p.cfg.drama, 0, 100);
+  if(amount>0 && !silent){
+    S.scream = 40; S.shake = 14;
+    const o = p.cfg.ouch[irnd(0,p.cfg.ouch.length-1)];
+    float(o, '#ff5a5a', rnd(90,250), rnd(80,160));
+    if(p.cfg.id!=='verdugo') sndScream();
+  }
+  if(p.dolor>=100 && p.awake){
+    p.awake=false;
+    if(S.state==='mini'){ mini.holding=false; mini.shaving=false; mini.finishing=0; $('miniOv').classList.add('hidden'); }
+    if(p.faintCount>=1){
+      // SEGUNDO DESMAYO: no hay segunda oportunidad. Fin de la partida.
+      sndFail();
+      S.state='over';
+      gameOver(p);
+      hud();
+      return;
+    }
+    p.faintCount++;
+    let extra = '';
+    if(p.cfg.id==='rey'){
+      S.rep = clamp(S.rep-21,0,100);
+      extra = ' Su capucha se desliza... ¡UNA CORONA! ¡HAS DESMAYADO AL REY! La noticia correrá por todo el reino.';
+    }
+    sndFail();
+    S.state='faint';
+    closeDrawer();
+    $('faintTxt').textContent = p.name+' yace inconsciente en la silla.'+extra+' Solo hay un remedio medieval para esto... pero ten cuidado: si vuelve a desmayarse, lo perderás todo.';
+    $('faintOv').classList.remove('hidden');
+    log('💫 ¡'+p.name+' se ha DESMAYADO del dolor! Última advertencia: no puede volver a pasarle.');
+  }
+  hud();
+}
+$('reviveBtn').addEventListener('click', ()=>{
+  const p=S.p; if(!p) return;
+  p.awake=true; p.dolor=55;
+  p.wet = 260;
+  S.splash = 26;
+  S.rep = clamp(S.rep-3,0,100);
+  $('faintOv').classList.add('hidden');
+  S.state='play';
+  float('¡SPLASH!','#7ec8ff',170,120);
+  log('💧 Un cubo de agua fría del pozo. '+p.name+' vuelve en sí empapado y goteando, furioso. La aldea murmura sobre tu torpeza: <b>-3 fama</b>. ¡Ya no tienes más cubos para él, ten cuidado!');
+  beep(300,.15,'sine',.06);
+  hud();
+});
+function drawDeadFace(cfg){
+  const cv=$('deadFaceCv'), c=cv.getContext('2d');
+  const S8=6; // escala pixel de esta ilustración pequeña
+  function r(x,y,w,h,col){ c.fillStyle=col; c.fillRect(Math.round(x*S8),Math.round(y*S8),Math.round(w*S8),Math.round(h*S8)); }
+  c.clearRect(0,0,cv.width,cv.height);
+  r(0,0,25,25,'#0e0a14');
+  // cuerpo/cuello
+  r(9,17,7,6,cfg.skin);
+  r(6,20,13,5,cfg.clothes);
+  // cabeza
+  r(4,4,17,15,cfg.skin);
+  r(3,7,1.5,5,cfg.skin); r(19.5,7,1.5,5,cfg.skin);
+  // pelo simple
+  r(3,2,19,3.5,cfg.hair);
+  r(3,5.5,2,4,cfg.hair); r(20,5.5,2,4,cfg.hair);
+  // ojeras/palidez
+  c.globalAlpha=.22; r(5,9,15,7,'#3a2a40'); c.globalAlpha=1;
+  // ojos en X (apagados)
+  c.strokeStyle='#1a1010'; c.lineWidth=S8*0.85; c.lineCap='round';
+  function xmark(cx,cy){
+    c.beginPath();
+    c.moveTo((cx-1.7)*S8,(cy-1.7)*S8); c.lineTo((cx+1.7)*S8,(cy+1.7)*S8);
+    c.moveTo((cx+1.7)*S8,(cy-1.7)*S8); c.lineTo((cx-1.7)*S8,(cy+1.7)*S8);
+    c.stroke();
+  }
+  xmark(8.5,10); xmark(16,10);
+  // cejas caídas (dramatismo)
+  r(6,7.3,3.4,1,'#000'); r(15,7.3,3.4,1,'#000');
+  // boca abierta + lengua colgando
+  r(9,13.5,7,2.6,'#2a1418');
+  r(11.3,15.8,2.4,6.5,'#c4626e');
+  r(11.1,22,2.8,1.6,'#a84c58');
+  // estrellitas mortuorias
+  c.fillStyle='#8a7ab0'; c.font='bold 9px Courier New';
+  c.fillText('✝', 2, 8); c.fillText('✝', 118, 130);
+}
+function gameOver(p){
+  closeDrawer();
+  drawDeadFace(p.cfg);
+  const elapsed = S.startTime ? Date.now()-S.startTime : 0;
+  const isNewRecord = saveBestRecordIfBetter(S.patientsServed, elapsed, S.day);
+  $('overTxt').innerHTML = p.name+' ha vuelto a desmayarse del dolor y esta vez no despierta con agua fría.<br><br>'+
+    'La noticia corre por la aldea: <b>tu reputación como barbero-cirujano queda arruinada.</b>';
+  $('overStats').innerHTML =
+    (isNewRecord? '🏆 <b>¡NUEVO RÉCORD!</b><br>' : '')+
+    '📅 Días sobrevividos: <b>'+S.day+'</b><br>'+
+    '🩺 Pacientes atendidos: <b>'+S.patientsServed+'</b><br>'+
+    '🪙 Monedas ganadas: <b>'+S.coins+'</b><br>'+
+    '⏱️ Tiempo de tu racha: <b>'+formatTime(elapsed)+'</b>';
+
+  // Guardar los datos de esta racha para el ranking
+  S.lastRun = { patients:S.patientsServed, timeMs:elapsed, saved:false };
+
+  // Preparar el formulario de ranking
+  const last = loadLastPlayer();
+  $('playerName').value    = last ? last.name : '';
+  $('playerCountry').value = last ? last.country : '';
+  $('flagPreview').textContent = last ? countryToFlag(last.country) : '🏳️';
+  $('saveMsg').textContent = '';
+  $('saveMsg').className   = 'small';
+  $('saveScoreBtn').disabled = false;
+  $('saveForm').classList.remove('hidden');
+  $('leaderboard').classList.add('hidden');
+  $('showLbBtn').classList.remove('hidden');
+
+  $('overOv').classList.remove('hidden');
+}
+
+// Vista previa de la bandera mientras el usuario escribe el país
+$('playerCountry').addEventListener('input', (e)=>{
+  $('flagPreview').textContent = countryToFlag(e.target.value);
+});
+
+// Guardar puntaje en el ranking global
+$('saveScoreBtn').addEventListener('click', async ()=>{
+  if(!S.lastRun || S.lastRun.saved) return;
+  const name    = $('playerName').value.trim();
+  const country = $('playerCountry').value.trim().toLowerCase();
+  if(!name){
+    $('saveMsg').textContent = 'Escribe tu nombre.';
+    $('saveMsg').className = 'small err';
+    return;
+  }
+  const btn = $('saveScoreBtn');
+  btn.disabled = true;
+  $('saveMsg').textContent = 'Guardando…';
+  $('saveMsg').className = 'small';
+
+  const res = await submitScore(name, country, S.lastRun.patients, S.lastRun.timeMs);
+  if(res.ok){
+    S.lastRun.saved = true;
+    saveLastPlayer(name, country);
+    $('saveMsg').textContent = '✅ ¡Guardado! Quedaste en el puesto #'+res.rank+'.';
+    $('saveMsg').className = 'small ok';
+    $('saveForm').classList.add('hidden');
+    $('showLbBtn').classList.add('hidden');
+    loadLeaderboard({ name, country, patients:S.lastRun.patients, timeMs:S.lastRun.timeMs });
+  }else{
+    btn.disabled = false;
+    $('saveMsg').textContent = '⚠️ '+res.error;
+    $('saveMsg').className = 'small err';
+  }
+});
+
+// Ver el ranking sin guardar
+$('showLbBtn').addEventListener('click', ()=>{
+  $('showLbBtn').classList.add('hidden');
+  loadLeaderboard(null);
+});
+
+$('restartBtn').addEventListener('click', ()=>{
+  $('overOv').classList.add('hidden');
+  startGame();
+});
+
+// ============================== CAJÓN DE HERRAMIENTAS (móvil) ==============================
+const TOOL_LABEL = { tenazas:'🗜️ Tenazas', hierro:'🔥 Hierro' };
+function openDrawer(){ $('toolsPanel').classList.add('open'); }
+function closeDrawer(){ $('toolsPanel').classList.remove('open'); }
+function toggleDrawer(){ $('toolsPanel').classList.toggle('open'); }
+function updateToolBadge(){
+  const badge = $('toolBadge');
+  if(S.tool && TOOL_LABEL[S.tool]){
+    $('toolBadgeName').textContent = TOOL_LABEL[S.tool];
+    badge.classList.remove('hidden');
+  } else {
+    badge.classList.add('hidden');
+  }
+}
+$('toolsHandle').addEventListener('click', toggleDrawer);
+
+// ============================== HERRAMIENTAS ==============================
+const TOOL_INFO = {
+  tenazas:'Pulsa una muela podrida o floja para arrancarla.',
+  hierro:'Pulsa un hueco sangrante para cauterizarlo.',
+};
+document.querySelectorAll('.tool').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    if(S.state!=='play' || !S.p) return;
+    closeDrawer();
+    const t = btn.dataset.tool;
+    if(t==='cobrar'){ return charge(); }
+    if(!S.p.awake && t!=='trapo'){ log('😵 El paciente está desmayado. ¡El cubo de agua primero!'); return; }
+    if(t==='sanguijuelas') return useLeeches();
+    if(t==='lanceta') return useLancet();
+    if(t==='navaja') return useRazor();
+    if(t==='aguja') return useNeedle();
+    if(t==='caldero') return useCauldron();
+    if(t==='tablillas') return useSplints();
+    if(t==='pocion') return usePotion();
+    if(t==='trapo') return useRag();
+    if(t==='interrogar') return useInterrogar();
+    S.tool = (S.tool===t)? null : t;
+    document.querySelectorAll('.tool').forEach(b=>b.classList.toggle('active', b.dataset.tool===S.tool));
+    updateToolBadge();
+    if(S.tool) log('🫳 '+TOOL_INFO[S.tool]);
+  });
+});
+
+function usePotion(){
+  const p=S.p;
+  if(S.potions<=0){ log('🧪 Ya no te quedan pociones en toda la partida. ¡Y no pienso darle del mío!'); return; }
+  S.potions--; hurt(-28, true);
+  float('Glu glu glu~','#9fe07a',180,150);
+  log('🧪 El paciente bebe la poción. Hipa, sonríe un poco. Dolor aliviado. Te quedan '+S.potions+' para el resto de la partida.');
+  beep(500,.1,'sine',.05); setTimeout(()=>beep(700,.12,'sine',.05),100);
+  hud();
+}
+function useRag(){
+  if(S.splats.length===0){ log('🧻 La cara del paciente está... razonablemente limpia. Para 1347.'); return; }
+  S.splats = [];
+  if(Math.random()<0.5){
+    S.coins += 1; S.coinsDay += 1;
+    sndCoin();
+    float('+1 🪙','#e0a93c',200,140);
+    log('🧻 Limpias la sangre con el trapo. El paciente, agradecido, te desliza +1 moneda de propina.');
+  } else {
+    log('🧻 Limpias la sangre con el trapo de siempre. El mismo de todos los pacientes, sí. Ni las gracias te da.');
+  }
+  hud();
+}
+function useInterrogar(){
+  const p=S.p;
+  if(p.interrogated){ log('💬 Ya le preguntaste antes. No va a repetir la misma historia dos veces.'); return; }
+  p.interrogated = true;
+  $('interrogarBtn').disabled = true;
+  const b=$('bubble');
+  b.textContent = introLine(p);
+  b.style.display='block';
+  setTimeout(()=>{ b.style.display='none'; }, 8000);
+  beep(700,.06,'square',.04); setTimeout(()=>beep(900,.07,'square',.04),70);
+  log('💬 "Decidme otra vez, ¿qué os aqueja?" — '+p.name+' repite su dolencia. Lee la pista sobre su cabeza.');
+  hud();
+}
+function useLeeches(){
+  if(!pending(S.p,'flemon')){ log('🪱 No hay flemón que tratar. Las sanguijuelas se quedan en su frasco, decepcionadas.'); return; }
+  startMini('leeches');
+}
+function useLancet(){
+  if(!pending(S.p,'humores')){ log('🔪 Sus humores están equilibrados (según la ciencia de 1347). No hace falta sangría.'); return; }
+  startMini('bleed');
+}
+function useRazor(){
+  if(!pending(S.p,'grenas')){ log('🪒 No hay greñas que afeitar. Su barba está... aceptable.'); return; }
+  startMini('shave');
+}
+function useNeedle(){
+  if(!pending(S.p,'herida')){ log('🪡 No hay heridas abiertas que coser. La aguja vuelve al alfiletero.'); return; }
+  startMini('stitch');
+}
+function useCauldron(){
+  if(!pending(S.p,'tripas')){ log('⚗️ Sus tripas están en paz. El caldero sigue frío.'); return; }
+  startMini('brew');
+}
+function useSplints(){
+  if(!pending(S.p,'hueso')){ log('🦴 No hay huesos rotos. Las tablillas se quedan en el estante.'); return; }
+  startMini('splint');
+}
+function charge(){
+  const p=S.p, a=afflictions(p);
+  if(a.done!==a.total) return;
+  S.patientsServed++;
+  const payMult = p.cfg.payMult||1; // solo el Rey paga extra dinero (x2)
+  const pay = a.total*5*payMult;
+  S.coins += pay; S.coinsDay += pay;
+
+  const famaMult = p.cfg.famaMult||1; // solo el Verdugo dobla la fama ganada
+  const lowPain = p.dolor<60;
+  let repGain = (2 + (lowPain?3:0)) * famaMult;
+  let extra='';
+  if(p.cfg.id==='rey' && p.awake){ repGain+=10; extra='<br>👑 Al pagar, ves un anillo con el sello REAL. "Buen trabajo, plebeyo. El reino lo sabrá." <b>¡+10 fama!</b>'; }
+  if(p.cfg.id==='bruja'){ S.potions+=2; extra='<br>🔮 Morgana sonríe: "Un trato es un trato." <b>¡Bendición!</b> Te regala 2 pociones extra para calmar el dolor de futuros pacientes.'; }
+  if(p.cfg.id==='verdugo'){ extra='<br>🪓 El Verdugo asiente en silencio. Con él, tu fama vale el doble.'; }
+  S.rep = clamp(S.rep + repGain, 0, 100);
+  sndCoin();
+  $('payTitle').textContent = '✅ '+p.name+', ¡curado!';
+  $('payTxt').innerHTML = 'Males tratados: <b>'+a.total+'</b> × 5'+(payMult>1?' × '+payMult+' (¡paga de la corona!)':'')+' → <b>'+pay+' monedas</b>'+
+    (lowPain? '<br>🌟 Trabajo limpio (dolor bajo): <b>+3 fama extra</b>' : '<br>😬 Gritó bastante — sin bono de fama por dolor.')+
+    '<br>⭐ Fama ganada: <b>+'+repGain+'</b>'+(famaMult>1?' (×2 por ser el Verdugo)':'')+
+    extra+'<br><br>'+farewell(p);
+  $('payOv').classList.remove('hidden');
+  S.state='pay';
+}
+function farewell(p){
+  const good = p.dolor<35;
+  const lines = {
+    bartolo: good? '"¡Buen trabajo, maese! Le forjaré unas tenazas nuevas."':'"Duele menos el martillazo que me di el martes. Tome."',
+    urraca: good? '"¡Es usted un santo, barbero!"':'"¡Bruto! ¡Carnicero! ...pero ya no me duele. Tome su dinero."',
+    gula: good? '"Que el Señor os bendiga... y me aleje del mazapán."':'"Rezaré por vuestra alma. Lo necesita."',
+    sancho: good? '"¡Mis cochinos no me van a reconocer de guapo!"':'"Los cochinos muerden con más cariño, oiga."',
+    tomasa: good? '"No estuvo mal... para un mocoso."':'"¡En mis tiempos los barberos tenían MANO!"',
+    rodrigo: good? '"Os nombraría caballero si pudiera."':'"He visto batallas más suaves. Tomad."',
+    aldonza: good? '"Pásate por la taberna: primera jarra gratis."':'"Tienes vetada la taberna una semana. Toma."',
+    pedro: good? '"Contaré tu milagro en Compostela."':'"Añadiré esta penitencia a mi Camino."',
+    inigo: good? '"Puntadas dignas... casi como las mías."':'"Un remiendo BURDO. Pero funcional. Tenga."',
+    gunther: good? '"...aceptable." (Eso es un cumplido enorme.)':'"He pagado más por menos dolor. Y también al revés."',
+    verdugo: '"..." (Desliza las monedas y desaparece en la niebla.)',
+    bruja: good? '"Volveremos a vernos, barbero."':'"Tu suerte pende de un hilo... pero pagaré."',
+    rey: good? '"Excelente, ple— digo, amigo mío."':'"Esto rozó el delito de lesa majestad. Toma y calla."',
+  };
+  return lines[p.cfg.id] || '"Gracias, barbero."';
+}
+$('payBtn').addEventListener('click', ()=>{
+  $('payOv').classList.add('hidden');
+  S.qIdx++;
+  if(S.qIdx>=S.roster.length){ endDay(); } else { nextPatient(); }
+});
+
+function endDay(){
+  S.state='end';
+  let rank='Matasanos aprendiz';
+  if(S.rep>=85) rank='⚜️ MAESTRO BARBERO-CIRUJANO DEL REINO';
+  else if(S.rep>=65) rank='Sacamuelas de confianza';
+  else if(S.rep>=45) rank='Barbero del montón';
+  else if(S.rep>=25) rank='Sacamuelas sospechoso';
+  $('endTxt').innerHTML = 'Cierras la barbería al caer el sol del día '+S.day+'.<br><br>'+
+    '🪙 Hoy: <b>'+S.coinsDay+'</b> monedas · Total: <b>'+S.coins+'</b><br>'+
+    '⭐ Fama: <b>'+Math.round(S.rep)+'/100</b> — <b>'+rank+'</b><br><br>'+
+    '<span class="small">Mañana vendrán '+dayPatientCount(S.day+1)+' pacientes, con más males y menos paciencia. Descansa... si puedes.</span>';
+  $('endOv').classList.remove('hidden');
+}
+$('againBtn').addEventListener('click', ()=>{
+  S.day++;
+  $('endOv').classList.add('hidden');
+  showDayIntro();
+});
+function showDayIntro(){
+  S.state='day';
+  const n = dayPatientCount(S.day);
+  $('dayTitle').textContent = '☀️ DÍA '+S.day;
+  const hints=['La cola es corta. Buen día para practicar.',
+    'Hay murmullos en la plaza. Más gente de lo normal.',
+    'La cola da la vuelta a la iglesia. Y hay una figura encapuchada...',
+    'El pueblo entero parece tener males hoy. Que Dios reparta suerte.',
+    'Ni el físico de la ciudad da abasto. Todos vienen a TI.'];
+  $('dayTxt').innerHTML = '<b>'+n+' pacientes</b> esperan en la puerta.<br>'+hints[Math.min(S.day-1,hints.length-1)]+
+    '<br><br>🧪 Pociones restantes: <b>'+S.potions+'</b> (para toda la partida)';
+  $('dayOv').classList.remove('hidden');
+}
+$('dayBtn').addEventListener('click', ()=>{
+  $('dayOv').classList.add('hidden');
+  S.roster = buildRoster(S.day);
+  S.qIdx=0; S.coinsDay=0;
+  playDayMusic();
+  nextPatient();
+});
+
+// ============================== BOCA (vista dental) ==============================
+const mcv = $('mouth'), mctx = mcv.getContext('2d');
+let toothRects = [];
+const TOOTH_W=34, TOOTH_H=46;
+
+function drawMouth(){
+  const p=S.p;
+  mctx.fillStyle='#1a0d0d'; mctx.fillRect(0,0,360,150);
+  if(!p) return;
+  mctx.fillStyle='#8f3a44'; mctx.fillRect(10,16,340,52);
+  mctx.fillStyle='#a8505a'; mctx.fillRect(10,16,340,14);
+  mctx.fillStyle='#b3565e'; mctx.fillRect(60,118,240,32);
+  mctx.fillStyle='#c46a72'; mctx.fillRect(80,118,200,10);
+  toothRects=[];
+  for(let i=0;i<8;i++){
+    const x = 18 + i*42, y = 56;
+    toothRects.push({x,y,w:TOOTH_W,h:TOOTH_H,i});
+    drawToothPx(x,y,p.teeth[i].status,i);
+  }
+  mctx.fillStyle='#e6d3a3'; mctx.font='bold 10px Courier New';
+  mctx.fillText('← pulsa una muela con la herramienta elegida →', 52, 145);
+}
+function drawToothPx(x,y,st,i){
+  const wob = (st==='floja')? Math.sin(S.t/6+i)*3 : 0;
+  mctx.save(); mctx.translate(x+TOOTH_W/2, y); mctx.rotate(wob*0.06); mctx.translate(-TOOTH_W/2,0);
+  if(st==='vacio'){
+    mctx.fillStyle='#5e2730'; mctx.fillRect(4,-4,TOOTH_W-8,16);
+    mctx.restore(); return;
+  }
+  if(st==='hueco'){
+    mctx.fillStyle='#5e2730'; mctx.fillRect(2,-6,TOOTH_W-4,20);
+    mctx.fillStyle='#b3202b'; mctx.fillRect(6,-2,TOOTH_W-12,12);
+    const drip = (S.t*2)%30;
+    mctx.fillRect(TOOTH_W/2-2, 10+drip, 4, 8);
+    mctx.restore(); return;
+  }
+  if(st==='cauterizado'){
+    mctx.fillStyle='#3a3a3a'; mctx.fillRect(4,-4,TOOTH_W-8,18);
+    mctx.fillStyle='#555'; mctx.fillRect(8,0,TOOTH_W-16,10);
+    if(S.t%40<6){ mctx.fillStyle='#999'; mctx.fillRect(TOOTH_W/2-1,-10,2,5); }
+    mctx.restore(); return;
+  }
+  let col='#f5efe0', edge='#cfc4a8';
+  if(st==='podrida'){ col='#6b4a2a'; edge='#4a3018'; }
+  if(st==='floja'){ col='#e8d77a'; edge='#bda23f'; }
+  mctx.fillStyle=edge; mctx.fillRect(0,0,TOOTH_W,TOOTH_H-12);
+  mctx.fillStyle=col; mctx.fillRect(3,3,TOOTH_W-6,TOOTH_H-18);
+  mctx.fillStyle=edge;
+  mctx.fillRect(4,TOOTH_H-12,8,12); mctx.fillRect(TOOTH_W-12,TOOTH_H-12,8,12);
+  if(st==='podrida'){
+    mctx.fillStyle='#7a8f3c'; mctx.fillRect(10,12,9,9); mctx.fillRect(20,22,6,6);
+    mctx.fillStyle='#2a1c12'; mctx.fillRect(14,8,6,6);
+    if(S.t%30<15){ mctx.fillStyle='#8fae4c'; mctx.fillRect(12,2,3,3);}
+  }
+  mctx.restore();
+}
+mcv.addEventListener('click', e=>{
+  if(S.state!=='play' || !S.p || !S.p.awake) return;
+  const r = mcv.getBoundingClientRect();
+  const sx = mcv.width/r.width, sy = mcv.height/r.height;
+  const mx = (e.clientX-r.left)*sx, my=(e.clientY-r.top)*sy;
+  const hit = toothRects.find(t=> mx>=t.x && mx<=t.x+t.w && my>=t.y-8 && my<=t.y+t.h);
+  if(!hit) return;
+  toothClick(hit.i);
+});
+function toothClick(i){
+  const p=S.p, st=p.teeth[i].status;
+  if(!S.tool){ log('🫳 Elige una herramienta primero (Tenazas o Hierro).'); return; }
+  if(S.tool==='tenazas'){
+    if(st==='podrida' || st==='floja'){ startMini('extract', i); }
+    else if(st==='hueco'){ log('🗜️ Ahí ya no hay muela, solo sangre. Necesitas el HIERRO.'); }
+    else if(st==='s'){ hurt(10); S.rep=clamp(S.rep-3,0,100); S.splats.push(splat()); log('💢 ¡Esa muela estaba SANA, bestia! El paciente te mira con odio.'); }
+    else { log('🗜️ Nada que arrancar ahí.'); }
+    return;
+  }
+  if(S.tool==='hierro'){
+    if(st==='hueco'){ startMini('cauter', i); }
+    else if(st==='podrida'||st==='floja'){ log('🔥 Primero se arranca, LUEGO se quema. El orden importa, aprendiz.'); }
+    else if(st==='s'){ hurt(14); S.rep=clamp(S.rep-3,0,100); log('🔥 ¡Le has quemado una muela sana! Huele a barbacoa y a demanda medieval.'); }
+    else { log('🔥 Ahí no hace falta fuego.'); }
+    return;
+  }
+}
+function splat(){ return {x:rnd(120,260), y:rnd(230,300), r:irnd(4,9)}; }
+
+// ============================== MINIJUEGOS ==============================
+const ING = [
+  {id:'hierba', name:'hierba'},
+  {id:'seta', name:'seta'},
+  {id:'hueso', name:'polvo de hueso'},
+  {id:'ajo', name:'ajo'},
+  {id:'gota', name:'rocío de luna'},
+];
+const mini = { type:null, tooth:-1, marker:0, dir:1, speed:1.6, zone:[40,62], hits:0, need:3,
+  heat:0, holding:false, spots:[], leechDone:0, blood:0, finishing:0,
+  tufts:[], moles:[], shaving:false, px:240, py:120,
+  stitches:[], stitchIdx:0,
+  recipe:[], picked:0, smoke:0, phase:'',
+  bonePos:0, boneDir:1, boneSpeed:2, alignZone:[40,60], wrap:0, drops:0, dropsNeed:15 };
+const miCv = $('miniCv'), miCtx = miCv.getContext('2d');
+function cvPos(e){
+  const r=miCv.getBoundingClientRect();
+  return { x:(e.clientX-r.left)*(miCv.width/r.width), y:(e.clientY-r.top)*(miCv.height/r.height) };
+}
+
+function startMini(type, tooth){
+  mini.type=type; mini.tooth=(tooth===undefined?-1:tooth); mini.finishing=0; mini.phase='';
+  S.state='mini';
+  const d = S.day;
+  $('miniOv').classList.remove('hidden');
+  const T=$('miniTitle'), D=$('miniDesc'), B=$('miniBtn');
+  B.classList.remove('hidden');
+  if(type==='extract'){
+    const loose = S.p.teeth[tooth].status==='floja';
+    mini.hits=0; mini.need= loose?2:3; mini.marker=0; mini.dir=1;
+    mini.speed= (loose?1.5:1.9) + 0.14*(d-1);
+    const zw = Math.max((loose?26:18) - 1.5*(d-1), 10); const zc = rnd(25,75);
+    mini.zone=[zc-zw/2, zc+zw/2];
+    T.textContent='🗜️ EXTRACCIÓN CON TENAZAS';
+    D.textContent='Pulsa ¡TIRAR! cuando la aguja esté en la ZONA VERDE. Aciertos: '+mini.need+'. Si fallas, el paciente sufrirá. Mucho.';
+    B.textContent='¡TIRAR!';
+  }
+  if(type==='cauter'){
+    mini.heat=0; mini.holding=false;
+    T.textContent='🔥 CAUTERIZAR CON HIERRO CANDENTE';
+    D.textContent='MANTÉN PULSADO para calentar el hierro. Suéltalo en la ZONA NARANJA, pegada al rojo (¡si te pasas un poco, quemas al paciente!).';
+    B.textContent='CALENTAR (mantener)';
+  }
+  if(type==='leeches'){
+    mini.leechDone=0;
+    const n = irnd(3,7);
+    mini.spots=[];
+    let guard=0;
+    while(mini.spots.length<n && guard++<200){
+      const cand = {x:rnd(140,370), y:rnd(65,175)};
+      const tooClose = mini.spots.some(s=> Math.hypot(s.x-cand.x, s.y-cand.y) < 48);
+      if(!tooClose) mini.spots.push({...cand, done:false});
+    }
+    T.textContent='🪱 APLICAR SANGUIJUELAS';
+    D.textContent='El flemón está hinchado de "malos humores". Coloca las '+n+' sanguijuelas pulsando los círculos.';
+    B.classList.add('hidden');
+  }
+  if(type==='bleed'){
+    mini.phase='align';
+    mini.blood=0; mini.drops=0; mini.dropsNeed=irnd(10,30);
+    mini.marker=0; mini.dir=1; mini.speed=1.7+0.12*(d-1);
+    const zw=Math.max(10-0.6*(d-1), 6), zc=rnd(25,75);
+    mini.zone=[zc-zw/2, zc+zw/2];
+    T.textContent='🔪 SANGRÍA TERAPÉUTICA';
+    D.textContent='Primero PULSA cuando la aguja esté en la ZONA VERDE (angosta) para clavar la lanceta. Luego, pulsa varias veces para sacar sangre gota a gota hasta llenar el cuenco.';
+    B.textContent='CLAVAR LANCETA';
+  }
+  if(type==='shave'){
+    const nT = Math.min(5+d, 10), nM = Math.min(1+Math.floor(d/2), 4);
+    mini.tufts=[]; mini.moles=[];
+    for(let i=0;i<nT;i++) mini.tufts.push({x:rnd(80,400), y:rnd(70,190), r:rnd(10,15), done:false});
+    for(let i=0;i<nM;i++) mini.moles.push({x:rnd(90,390), y:rnd(75,185), hit:0});
+    mini.shaving=false;
+    T.textContent='🪒 AFEITADO DE GREÑAS';
+    D.textContent='MANTÉN PULSADO Y ARRASTRA la navaja sobre los pelambres para afeitarlos. ¡NO toques las verrugas rojas o lo cortarás!';
+    B.classList.add('hidden');
+  }
+  if(type==='stitch'){
+    const n = irnd(4,8);
+    const ltr = Math.random()<0.5; // a veces de izquierda a derecha, a veces al revés
+    mini.stitches=[]; mini.stitchIdx=0;
+    for(let i=0;i<n;i++){
+      const x = ltr ? 70+i*(340/(n-1)) : 410-i*(340/(n-1));
+      mini.stitches.push({ x, y: (i%2===0? 88:148)+rnd(-6,6), done:false });
+    }
+    T.textContent='🪡 COSER LA HERIDA';
+    D.textContent='Pulsa los puntos de sutura EN ORDEN (el que parpadea). Cada fallo es un pinchazo extra para el pobre paciente.';
+    B.classList.add('hidden');
+  }
+  if(type==='brew'){
+    const len = d>=3? 4:3;
+    mini.recipe = shuffle(ING).slice(0,len).map(g=>g.id);
+    mini.picked=0; mini.smoke=0; mini.phase='pick';
+    T.textContent='⚗️ REMEDIO PARA LAS TRIPAS';
+    D.textContent='Sigue la RECETA: pulsa los frascos en el orden indicado arriba. Si te equivocas, la mezcla se arruina y hay que empezar. Luego, mezcla 3 veces en el punto justo del hervor.';
+    B.classList.add('hidden');
+  }
+  if(type==='splint'){
+    mini.phase='align'; mini.bonePos=0; mini.boneDir=1;
+    mini.boneSpeed = 1.8 + 0.22*(d-1);
+    const zw = Math.max(20-2*(d-1), 10);
+    mini.alignZone=[50-zw/2, 50+zw/2];
+    mini.wrap=0;
+    T.textContent='🦴 ENTABLILLAR EL BRAZO';
+    D.textContent='FASE 1: pulsa FIJAR cuando el hueso pase por la ZONA VERDE para alinearlo. FASE 2: pulsa rápido para vendar antes de que se afloje.';
+    B.textContent='FIJAR HUESO';
+  }
+}
+function closeMini(){
+  $('miniOv').classList.add('hidden');
+  S.state='play';
+  hud();
+}
+
+const miniBtn = $('miniBtn');
+miniBtn.addEventListener('pointerdown', e=>{
+  e.preventDefault();
+  if(S.state!=='mini' || mini.finishing) return;
+  if(mini.type==='extract'){ extractTry(); }
+  else if(mini.type==='cauter'){ mini.holding=true; }
+  else if(mini.type==='bleed'){
+    if(mini.phase==='align'){ bleedAlignTry(); }
+    else if(mini.phase==='drops'){ bleedDropTap(); }
+  }
+  else if(mini.type==='brew' && mini.phase==='stir'){ stirTry(); }
+  else if(mini.type==='splint'){
+    if(mini.phase==='align'){ alignTry(); }
+    else if(mini.phase==='wrap'){
+      mini.wrap = clamp(mini.wrap+9, 0, 100);
+      sndSnip();
+      if(mini.wrap>=100){
+        mini.finishing=70;
+        resolveAil(S.p,'hueso');
+        hurt(5, true);
+        float('¡Vendado!','#9fe07a',200,120);
+        log('🦴 Tablillas firmes y venda prieta. El brazo sanará torcido solo un poco. ¡Éxito medieval!');
+      }
+    }
+  }
+});
+function releaseHold(){
+  mini.shaving=false;
+  if(S.state!=='mini') return;
+  if(mini.type==='cauter' && mini.holding){ mini.holding=false; cauterRelease(); }
+}
+window.addEventListener('pointerup', releaseHold);
+window.addEventListener('pointercancel', releaseHold);
+window.addEventListener('blur', ()=>{ mini.holding=false; mini.shaving=false; });
+
+$('miniCancel').addEventListener('click', ()=>{
+  if(S.state!=='mini') return;
+  mini.holding=false; mini.shaving=false; mini.finishing=0;
+  if(mini.type==='cauter') mini.heat=0;
+  log('✋ Sueltas la herramienta y respiras. El paciente también. Puedes volver cuando quieras.');
+  closeMini();
+});
+
+miCv.addEventListener('pointerdown', e=>{
+  e.preventDefault();
+  if(S.state!=='mini' || mini.finishing) return;
+  const pos = cvPos(e);
+  if(mini.type==='leeches') leechTap(pos);
+  if(mini.type==='shave'){ mini.shaving=true; mini.px=pos.x; mini.py=pos.y; shaveAt(pos); }
+  if(mini.type==='stitch') stitchTap(pos);
+  if(mini.type==='brew' && mini.phase==='pick') brewTap(pos);
+});
+miCv.addEventListener('pointermove', e=>{
+  if(mini.type!=='shave') return;
+  const pos = cvPos(e);
+  mini.px=pos.x; mini.py=pos.y;
+  if(mini.shaving && !mini.finishing && S.state==='mini') shaveAt(pos);
+});
+
+function leechTap(pos){
+  mini.spots.forEach(s=>{
+    if(!s.done && Math.hypot(pos.x-s.x,pos.y-s.y)<26){
+      s.done=true; mini.leechDone++;
+      beep(160,.12,'triangle',.05);
+      float('¡slurp!','#9fe07a');
+      if(mini.leechDone>=mini.spots.length){ mini.finishing=90; }
+    }
+  });
+}
+function shaveAt(pos){
+  mini.tufts.forEach(tf=>{
+    if(!tf.done && Math.hypot(pos.x-tf.x,pos.y-tf.y) < tf.r+9){
+      tf.done=true; sndSnip();
+    }
+  });
+  mini.moles.forEach(m=>{
+    if(m.hit<=0 && Math.hypot(pos.x-m.x,pos.y-m.y) < 11){
+      m.hit=30;
+      hurt(9);
+      S.splats.push(splat());
+      log('🩸 ¡Le has rebanado una verruga! Sangra como un gorrino. Más cuidado con la navaja.');
+    }
+  });
+  if(mini.tufts.every(tf=>tf.done) && !mini.finishing){
+    mini.finishing=70;
+    resolveAil(S.p,'grenas');
+    float('¡Como nuevo!','#9fe07a',190,110);
+    log('🪒 Afeitado terminado. Debajo de tanto pelo... ¡había una persona! Quién lo diría.');
+  }
+}
+function stitchTap(pos){
+  const cur = mini.stitches[mini.stitchIdx];
+  if(!cur) return;
+  if(Math.hypot(pos.x-cur.x,pos.y-cur.y)<20){
+    cur.done=true; mini.stitchIdx++;
+    sndSnip();
+    if(mini.stitchIdx>=mini.stitches.length){
+      mini.finishing=70;
+      resolveAil(S.p,'herida');
+      hurt(6, true);
+      float('¡Cosido!','#9fe07a',200,110);
+      log('🪡 Última puntada y nudo de marinero. La cicatriz contará una historia heroica (inventada).');
+    }
+  } else {
+    hurt(7);
+    log('💢 ¡Pinchazo en carne sana! La aguja no es un dardo, barbero.');
+  }
+}
+function brewTap(pos){
+  const jr = jarRects();
+  for(const j of jr){
+    if(pos.x>=j.x && pos.x<=j.x+j.w && pos.y>=j.y && pos.y<=j.y+j.h){
+      const want = mini.recipe[mini.picked];
+      if(j.id===want){
+        mini.picked++;
+        sndBubble();
+        if(mini.picked>=mini.recipe.length){
+          mini.phase='stir';
+          mini.marker=0; mini.dir=1; mini.speed=1.7+0.12*(S.day-1);
+          mini.hits=0; mini.need=3;
+          const zw=Math.max(22-1.5*(S.day-1),12), zc=rnd(30,70);
+          mini.zone=[zc-zw/2,zc+zw/2];
+          $('miniBtn').classList.remove('hidden');
+          $('miniBtn').textContent='¡MEZCLAR!';
+          log('⚗️ Ingredientes dentro. Ahora MEZCLA 3 veces en el punto justo del hervor.');
+        }
+      } else {
+        mini.smoke=44; mini.picked=0;
+        hurt(4, true);
+        sndFail();
+        log('💨 ¡PUAJ! Mezcla arruinada: humo gris y olor a calcetín de fraile. Empieza la receta de nuevo.');
+      }
+      return;
+    }
+  }
+}
+function stirTry(){
+  const inZone = mini.marker>=mini.zone[0] && mini.marker<=mini.zone[1];
+  if(inZone){
+    mini.hits++;
+    sndBubble(); S.shake=6;
+    if(mini.hits>=mini.need){
+      mini.finishing=80;
+      resolveAil(S.p,'tripas');
+      float('Glu glu... ¡ahhh!','#9fe07a',180,130);
+      log('⚗️ El remedio burbujea verde esperanza. El paciente lo bebe y sus tripas firman la paz.');
+    } else {
+      const zc = rnd(20,80), zw=(mini.zone[1]-mini.zone[0])*0.82;
+      mini.zone=[zc-zw/2, zc+zw/2]; mini.speed*=1.16;
+      log('⚗️ ¡Buena mezcla! El hervor coge fuerza... ('+mini.hits+'/'+mini.need+')');
+    }
+  } else {
+    hurt(5, true);
+    log('⚗️ Mezclaste a destiempo: el brebaje escupe como gato mojado. Otra vez, en el punto del hervor. ('+mini.hits+'/'+mini.need+')');
+  }
+}
+function alignTry(){
+  const inZone = mini.bonePos>=mini.alignZone[0] && mini.bonePos<=mini.alignZone[1];
+  if(inZone){
+    mini.phase='wrap'; mini.wrap=0;
+    sndCrack(); S.shake=10;
+    hurt(12);
+    $('miniBtn').textContent='¡VENDAR! (pulsa rápido)';
+    log('🦴 ¡CRAC! El hueso encaja en su sitio. Grito de récord. ¡Ahora venda rápido antes de que se mueva!');
+  } else {
+    hurt(10);
+    log('💢 Hueso mal alineado: solo has conseguido un crujido feo y un alarido. Espera la zona verde.');
+  }
+}
+function extractTry(){
+  const inZone = mini.marker>=mini.zone[0] && mini.marker<=mini.zone[1];
+  if(inZone){
+    mini.hits++;
+    sndPop(); S.shake=8;
+    if(mini.hits>=mini.need){
+      mini.finishing=60;
+      const loose = S.p.teeth[mini.tooth].status==='floja';
+      if(loose){
+        S.p.teeth[mini.tooth].status='vacio';
+        resolveAil(S.p,'floja',mini.tooth);
+      } else {
+        S.p.teeth[mini.tooth].status='hueco';
+      }
+      hurt(loose? 8 : 16);
+      S.splats.push(splat());
+      float('¡POP!','#ffe27a',190,110);
+      log(loose? '🦷 ¡La muela floja sale entera y limpia! Casi elegante.' :
+        '🦷 ¡CROC! La muela podrida sale con raíz y todo. Sangra como fuente de plaza. ¡Cauteriza ya!');
+    } else {
+      const zc = rnd(20,80), zw=(mini.zone[1]-mini.zone[0])*0.8;
+      mini.zone=[zc-zw/2, zc+zw/2]; mini.speed*=1.18;
+      log('🗜️ ¡Bien agarrada! La muela cede... ('+mini.hits+'/'+mini.need+')');
+    }
+  } else {
+    hurt(11);
+    log('💢 ¡Resbalón de tenazas! Le pellizcas la encía. El paciente recuerda a tu madre en voz alta.');
+  }
+}
+function cauterRelease(){
+  if(mini.finishing) return;
+  if(mini.heat>=79 && mini.heat<=86){
+    mini.finishing=70;
+    S.p.teeth[mini.tooth].status='cauterizado';
+    resolveAil(S.p,'podrida',mini.tooth);
+    hurt(10);
+    sndSizzle();
+    float('¡TSSSS!','#ff9a3c',200,120);
+    log('🔥 ¡TSSSSS! Olor a chuleta. El sangrado se detiene. Medicina de vanguardia (de 1347).');
+  } else if(mini.heat>86){
+    hurt(16); sndSizzle();
+    mini.heat=0;
+    if(S.state==='mini') log('🔥 ¡AL ROJO VIVO! Le has chamuscado media boca. Inténtalo de nuevo, pirómano.');
+  } else {
+    mini.heat=0;
+    log('🥶 El hierro estaba frío. Solo le has dado un golpecito metálico. Caliéntalo más.');
+  }
+}
+function bleedAlignTry(){
+  const inZone = mini.marker>=mini.zone[0] && mini.marker<=mini.zone[1];
+  if(inZone){
+    mini.phase='drops';
+    sndPop(); S.shake=8;
+    hurt(6);
+    $('miniBtn').textContent='¡SANGRAR! (pulsa '+mini.dropsNeed+' veces)';
+    log('🔪 ¡Lanceta bien clavada! Ahora pulsa varias veces para sacar sangre gota a gota. El cuenco necesita '+mini.dropsNeed+' gotas.');
+  } else {
+    hurt(9);
+    log('💢 Fallaste el pinchazo, solo un rasguño en la vena. Prueba de nuevo en la zona verde.');
+  }
+}
+function bleedDropTap(){
+  if(mini.finishing) return;
+  mini.drops++;
+  mini.blood = clamp((mini.drops/mini.dropsNeed)*100, 0, 100);
+  sndBubble();
+  float('·gota·','#c0392b',rnd(150,330),rnd(90,150));
+  if(mini.drops>=mini.dropsNeed){
+    mini.finishing=70;
+    resolveAil(S.p,'humores');
+    hurt(4, true);
+    float('humores: equilibrados','#9fe07a',150,130);
+    log('🔪 Cuenco lleno: '+mini.dropsNeed+' gotas justas. Los "humores" quedan equilibrados según los mejores físicos de París.');
+  }
+}
+
+// ============================== DIBUJO DEL PACIENTE (PIXEL) ==============================
+const fcv = $('face'), fctx = fcv.getContext('2d');
+const SC=8;
+function px(x,y,w,h,c){ fctx.fillStyle=c; fctx.fillRect(Math.round(x*SC), Math.round(y*SC), Math.round(w*SC), Math.round(h*SC)); }
+function pxa(x,y,w,h,c,a){ fctx.globalAlpha=a; px(x,y,w,h,c); fctx.globalAlpha=1; }
+
+function drawFace(){
+  const p=S.p;
+  fctx.fillStyle='#241629'; fctx.fillRect(0,0,fcv.width,fcv.height);
+  for(let i=0;i<7;i++){ px(0,i*8,48,7,i%2?'#3a2418':'#34200f'); }
+  px(36,4,9,9,'#10142e'); px(39,6,3,3,'#e6d3a3'); px(36,4,9,1,'#2d1a0f'); px(36,12,9,1,'#2d1a0f'); px(36,4,1,9,'#2d1a0f'); px(44,4,1,9,'#2d1a0f');
+  px(3,30,4,2,'#6b4527'); px(4,26,2,4,'#e6d3a3');
+  const fl = Math.sin(S.t/4)>0?0:1;
+  px(4.5-fl*0.5,24,1+fl,2,'#ffb53c'); px(5-fl*0.5,23,1,1,'#ff6a2a');
+
+  if(!p) return;
+  const cfg=p.cfg;
+  const shx = S.shake>0 ? Math.round(Math.sin(S.t*2.4)*Math.min(S.shake,8)/3) : 0;
+  fctx.save(); fctx.translate(shx*SC,0);
+
+  const W = cfg.wide? 3:0;
+  px(8,46,32,6,'#2d1a0f'); px(10,44,28,2,'#4a2f1d');
+  // cuerpo / ropa
+  px(12-W,40,24+2*W,12,cfg.clothes);
+  px(12-W,40,24+2*W,3,cfg.clothes2);
+  if(cfg.id==='bartolo'){ px(18,42,12,10,'#7a4a20'); px(22,42,4,10,'#5a3414'); }
+  if(cfg.id==='gula'){ px(14,44,20,2,'#3a2410'); px(22,46,4,4,'#c9b07a'); }
+  if(cfg.id==='rodrigo'){ for(let i=0;i<5;i++){ px(13+i*4.6,41+(i%2),3,2,'#8a8a94'); px(13+i*4.6,45+(i%2),3,2,'#8a8a94'); } }
+  if(cfg.id==='aldonza'){ px(16,43,16,9,'#e6d3a3'); px(16,43,16,2,'#c9b07a'); }
+  if(cfg.id==='inigo'){ px(22,41,4,7,'#c9b07a'); px(20,48,8,2,'#c9b07a'); }
+  if(cfg.id==='rey'){ px(21,43,6,6,'#e0c04c'); px(23,41,2,2,'#e0c04c'); }
+  if(cfg.id==='bruja'){ px(14,42,3,8,'#c9b07a'); px(31,42,3,8,'#8fae4c'); }
+
+  // BRAZO ROTO / ENTABLILLADO (delante del pecho)
+  if(p.ailments.some(a=>a.type==='hueso')){
+    const fixed = !pending(p,'hueso');
+    if(!fixed){
+      px(11-W,42,7,3.5,cfg.skin);           // antebrazo
+      px(17-W,38.5,3.5,7,cfg.skin);          // codo doblado MAL
+      px(20-W,38,8,3.5,cfg.skin);
+      px(17.5-W,41,2.5,2.5,'#b3202b');       // punto de fractura
+      pxa(16-W,40,6,5,'#b3202b',.35);        // hinchazón
+      if(S.t%90===0) float('~crujido~','#e0a93c',(18-W)*SC,300);
+    } else {
+      px(11-W,42,17,3.5,cfg.skin);           // brazo recto
+      px(12-W,41.2,15,1.2,'#8a6a3a');        // tablilla arriba
+      px(12-W,45.2,15,1.2,'#8a6a3a');        // tablilla abajo
+      px(14-W,41,2,5.5,'#e6d3a3'); px(19-W,41,2,5.5,'#e6d3a3'); px(24-W,41,2,5.5,'#e6d3a3'); // vendas
+    }
+  }
+
+  // cuello
+  px(20,36,8,5,cfg.skin);
+  // cabeza
+  px(13-W,10,22+2*W,27,cfg.skin);
+  px(12-W,13,1,20,cfg.skin); px(35+W,13,1,20,cfg.skin);
+  px(11-W,20,2,5,cfg.skin); px(35+W,20,2,5,cfg.skin);
+  pxa(14-W,30,20+2*W,6,'#000',.18);
+
+  // FLEMÓN
+  if(pending(p,'flemon')){
+    const puls = Math.sin(S.t/8)>0 ? 1:0;
+    px(31+W,23,6+puls,8+puls,'#e88a7a');
+    px(33+W,25,3,3,'#d96a5a');
+    if(S.t%140===0) float('~punzada~','#e88a7a',(33+W)*SC, 200);
+  }
+  // TRIPAS (verdor enfermizo)
+  if(pending(p,'tripas')){
+    pxa(15-W,26,5,4,'#6a8f3c',.3); pxa(28+W,26,5,4,'#6a8f3c',.3);
+    if(S.t%160===0) float('~grrrRRUuu~','#8fae4c',180,330);
+  }
+
+  // PELO / TOCADO
+  if(cfg.hat==='toca'){
+    px(11-W,7,26+2*W,7,'#e8e0d0'); px(10-W,12,3,16,'#e8e0d0'); px(35+W,12,3,16,'#e8e0d0');
+    px(11-W,7,26+2*W,2,'#cfc4a8');
+  } else if(cfg.hat==='tonsura'){
+    px(13-W,9,22+2*W,3,cfg.hair); px(12-W,11,3,6,cfg.hair); px(33+W,11,3,6,cfg.hair);
+    px(17,8,14,2,cfg.skin);
+  } else if(cfg.hat==='panuelo'){
+    const pc = cfg.hatColor||'#8a4a5a';
+    px(11-W,6,26+2*W,7,pc); px(10-W,11,3,8,pc); px(35+W,11,3,8,pc);
+    px(36+W,17,3,3,pc); px(38+W,20,2,4,pc); // nudo y cola
+    px(11-W,6,26+2*W,1.5,'#00000033');
+  } else if(cfg.hat==='casco'){
+    px(12-W,4,24+2*W,8,'#9a9aa4'); px(10-W,11,28+2*W,2,'#7a7a86');
+    px(15-W,5,5,1.5,'#c8c8d2'); px(23,2,2,3,'#7a7a86');
+  } else if(cfg.hat==='sombrero'){
+    px(8-W,12,32+2*W,2,'#6a4a26'); px(16,5,16,8,'#7a5a30');
+    px(22,8,4,3,'#e8dcc0'); px(23,9,2,1,'#c9b07a'); // concha del peregrino
+  } else if(cfg.hat==='bruja'){
+    px(7-W,12,34+2*W,2,'#20301c');
+    px(16,8,16,4,'#28401f'); px(18,5,12,3,'#28401f'); px(20,2,8,3,'#28401f'); px(24,0,3,2,'#28401f');
+    px(16,10,16,2,'#c8973a');
+  } else if(cfg.hat==='capucha'){
+    // capucha de verdugo: cubre toda la cabeza, ojos y boca serán "agujeros"
+    px(11-W,5,26+2*W,10,'#1c1c22');
+    px(12-W,14,24+2*W,16,'#1c1c22');
+    px(13-W,29,22+2*W,4,'#14141a');
+    px(18,29,12,7,cfg.skin); // ventana de la barbilla/boca
+    px(11-W,5,26+2*W,1.5,'#00000055');
+  } else if(cfg.hat==='capuchaRey'){
+    px(11-W,5,26+2*W,8,'#2a2038'); px(10-W,12,3,20,'#2a2038'); px(35+W,12,3,20,'#2a2038');
+    // corona asomando
+    px(15,12,3,3,'#e0c04c'); px(21,11,3,4,'#e0c04c'); px(27,12,3,3,'#e0c04c');
+    px(14,14.5,20,1.5,'#e0c04c');
+    if(S.t%60<8){ px(22,10,1,1,'#fff8d0'); } // destello
+  } else {
+    px(12-W,7,24+2*W,5,cfg.hair); px(12-W,11,4,8,cfg.hair); px(32+W,11,4,8,cfg.hair);
+    px(14,6,6,2,cfg.hair); px(26,6,6,2,cfg.hair);
+  }
+  if(cfg.beard){ px(14,30,20,7,cfg.hair); px(16,36,16,3,cfg.hair); px(19,30,10,5,cfg.skin); }
+
+  // GREÑAS salvajes (mal pendiente)
+  if(pending(p,'grenas')){
+    const hc = cfg.hair;
+    px(10-W,4,2,5,hc); px(15,2,2,5,hc); px(22,1,2,5,hc); px(29,2,2,5,hc); px(35+W,4,2,5,hc);
+    px(12-W,33,2,3,hc); px(15-W,35,2,3,hc); px(31+W,35,2,3,hc); px(34+W,33,2,3,hc);
+    px(17,36,2,3,hc); px(23,37,2,3,hc); px(29,36,2,3,hc);
+  }
+
+  // HERIDA en la frente
+  if(p.ailments.some(a=>a.type==='herida')){
+    const open = pending(p,'herida');
+    if(open){
+      px(19,12,3,1.6,'#b3202b'); px(22,13,3,1.6,'#b3202b'); px(25,14,3,1.6,'#b3202b');
+      const drip=(S.t*1.2)%14;
+      px(23,14+drip/2,1.2,2,'#b3202b');
+    } else {
+      px(19,12,3,1.2,'#6a2a2a'); px(22,13,3,1.2,'#6a2a2a'); px(25,14,3,1.2,'#6a2a2a');
+      px(20,11,1,3.5,'#3a3a3a'); px(23.5,12,1,3.5,'#3a3a3a'); px(27,13,1,3.5,'#3a3a3a');
+    }
+  }
+
+  // extras de personaje
+  if(cfg.wrinkles){ pxa(16,22.5,4,1,'#000',.25); pxa(28,22.5,4,1,'#000',.25); pxa(19,14.5,10,1,'#000',.2); }
+  if(cfg.freckles){ px(16,24,1,1,'#a86a3a'); px(18.5,25,1,1,'#a86a3a'); px(29,24,1,1,'#a86a3a'); px(31,25.2,1,1,'#a86a3a'); }
+  if(cfg.blush){ pxa(15,24,4,2,'#e06a6a',.4); pxa(29,24,4,2,'#e06a6a',.4); }
+  if(cfg.scar){ pxa(32,20,1.2,1.2,'#8a4a4a',.9); pxa(31.2,22,1.2,1.2,'#8a4a4a',.9); pxa(30.4,24,1.2,1.2,'#8a4a4a',.9); }
+
+  // CEJAS
+  const ang = p.dolor>55 ? 1 : 0;
+  if(cfg.hat!=='capucha'){
+    px(16,16+ang,5,1.6,'#2a1c12'); px(27,16+ang,5,1.6,'#2a1c12');
+    if(ang){ px(20,17.5,1,1,'#2a1c12'); px(27,17.5,1,1,'#2a1c12'); }
+  }
+
+  // OJOS
+  if(!p.awake){
+    drawX(17,19); drawX(28,19);
+  } else if(S.scream>0){
+    px(17,19,4,1.4,'#2a1c12'); px(28,19,4,1.4,'#2a1c12');
+    px(16,21,2,2,'#7ec8ff');
+  } else if(S.blink>0){
+    px(17,20,4,1,'#2a1c12'); px(28,20,4,1,'#2a1c12');
+  } else {
+    px(16.5,18,5,4,'#fff'); px(27.5,18,5,4,'#fff');
+    const look = Math.sin(S.t/90)*1.2;
+    px(18+look,19,2,2,'#2a1c12'); px(29+look,19,2,2,'#2a1c12');
+    if(p.dolor>70){ px(16.5,22,1.5,2,'#7ec8ff'); px(31,22,1.5,2,'#7ec8ff'); }
+  }
+  if(cfg.eyepatch){ px(26.5,17,7,5,'#14141a'); px(13,18.2,14,1,'#14141a'); px(33.5,16.5,3,1,'#14141a'); }
+
+  // NARIZ (oculta bajo la capucha del verdugo)
+  if(cfg.hat!=='capucha'){
+  px(23,22,3,4,cfg.id==='urraca'? '#d8a87a' : cfg.skin);
+  pxa(23,25,3,1,'#000',.25);
+  if(cfg.id==='bartolo'){ px(22,22,1,4,cfg.skin); px(26,23,1,3,cfg.skin); }
+  if(cfg.id==='bruja'){ px(22.5,21,4,5.5,cfg.skin); px(23,26.5,3,1.5,cfg.skin); px(24,24,1,1,'#8fae4c'); }
+  }
+
+  // BIGOTE
+  if(cfg.mustache){ px(19,27.6,10,1.8,cfg.hair); px(18,28.4,2,1.2,cfg.hair); px(28,28.4,2,1.2,cfg.hair); }
+
+  // BOCA
+  drawMouthOnFace(p,W);
+
+  // SUDOR
+  if(p.awake && p.dolor>45){
+    const dY = (S.t*1.5)%26;
+    px(14,12+dY/2,1.4,2.4,'#7ec8ff');
+    if(p.dolor>70) px(33+W,14+((S.t*1.8+9)%24)/2,1.4,2.4,'#7ec8ff');
+  }
+  // EFECTO DE AGUA: estallido del balde + goteo persistente tras reanimar
+  if(S.splash>0){
+    const prog = 1 - S.splash/26;
+    for(let i=0;i<10;i++){
+      const ang = i/10*Math.PI*2;
+      const rad = 3+prog*17;
+      const dx = 24+Math.cos(ang)*rad, dy = 20+Math.sin(ang)*rad*0.65;
+      pxa(dx,dy,1.6,1.6,'#bfe6ff', clamp(1-prog,0,1));
+    }
+    pxa(10-W,6,28+2*W,30,'#bfe6ff', (1-prog)*0.25);
+  }
+  if(p.wet>0){
+    const wf = clamp(p.wet/260,0,1);
+    pxa(13-W,10,22+2*W,22,'#7ec8ff', wf*0.14);
+    const nDrops = Math.max(1, Math.ceil(wf*5));
+    for(let i=0;i<nDrops;i++){
+      const seed=i*53;
+      const dy = (S.t*2.3 + seed) % 34;
+      const dx = 14-W + i*((20+2*W)/Math.max(nDrops,1));
+      pxa(dx, 6+dy/2, 1.2, 2.8, '#9fd8ff', 0.5+0.35*Math.sin(S.t/5+i));
+    }
+  }
+  if(!p.awake){
+    for(let i=0;i<3;i++){
+      const a=S.t/16+i*2.1, rx=24+Math.cos(a)*13, ry=8+Math.sin(a)*3;
+      fctx.fillStyle='#ffe27a';
+      fctx.font='bold 14px Courier New';
+      fctx.fillText('★', rx*SC, ry*SC);
+    }
+  }
+  S.splats.forEach(s=>{ fctx.fillStyle='#b3202b'; fctx.fillRect(s.x,s.y,s.r,s.r); fctx.fillRect(s.x+s.r,s.y+2,Math.max(2,s.r-3),Math.max(2,s.r-3)); });
+
+  fctx.restore();
+
+  S.floats = S.floats.filter(f=> f.life>0);
+  S.floats.forEach(f=>{
+    f.y -= 0.8; f.life--;
+    fctx.globalAlpha = clamp(f.life/40,0,1);
+    fctx.fillStyle = '#000';
+    fctx.font='bold 20px Courier New';
+    fctx.fillText(f.txt, f.x+2, f.y+2);
+    fctx.fillStyle = f.color;
+    fctx.fillText(f.txt, f.x, f.y);
+    fctx.globalAlpha = 1;
+  });
+}
+function drawX(x,y){
+  fctx.strokeStyle='#2a1c12'; fctx.lineWidth=SC*0.8;
+  fctx.beginPath();
+  fctx.moveTo(x*SC,y*SC); fctx.lineTo((x+3.5)*SC,(y+3)*SC);
+  fctx.moveTo((x+3.5)*SC,y*SC); fctx.lineTo(x*SC,(y+3)*SC);
+  fctx.stroke();
+}
+function drawMouthOnFace(p,W){
+  if(!p.awake){
+    px(22,30.5,4,3,'#5e2730');
+    return;
+  }
+  if(S.scream>0){
+    px(17,28,14,8,'#5e2730');
+    px(18,28,12,1.6,'#f5efe0');
+    px(19,34.4,10,1.6,'#f5efe0');
+    px(22.5,32,3,3,'#b3565e');
+  } else if(p.dolor>60){
+    const tr = Math.sin(S.t/2)*0.5;
+    px(18,31+tr,12,1.8,'#5e2730');
+    px(17,30+tr,2,1.6,'#5e2730'); px(29,30+tr,2,1.6,'#5e2730');
+  } else {
+    px(19,30,10,4,'#5e2730');
+    px(20,30,8,1.2,'#f5efe0');
+  }
+}
+
+// ============================== DIBUJO MINIJUEGOS ==============================
+function successBanner(c, text, cx, cy, color){
+  c.font='bold 22px Courier New';
+  const w = c.measureText(text).width;
+  const padX=16, padY=9;
+  c.fillStyle='rgba(8,5,10,0.92)';
+  c.fillRect(cx-w/2-padX, cy-22, w+padX*2, 22+padY*2-9);
+  c.strokeStyle=color; c.lineWidth=2;
+  c.strokeRect(cx-w/2-padX, cy-22, w+padX*2, 22+padY*2-9);
+  c.fillStyle=color;
+  c.textAlign='center';
+  c.fillText(text, cx, cy);
+  c.textAlign='left';
+}
+function barUI(c,bx,by,bw,bh,zones,value,marker){
+  c.fillStyle='#000'; c.fillRect(bx-4,by-4,bw+8,bh+8);
+  c.fillStyle='#3a2418'; c.fillRect(bx,by,bw,bh);
+  zones.forEach(z=>{ c.fillStyle=z[2]; c.fillRect(bx+bw*z[0]/100,by,bw*(z[1]-z[0])/100,bh); });
+  if(value!==null){ c.fillStyle='#ffe27a'; c.fillRect(bx,by+bh-8,bw*value/100,8); }
+  if(marker!==null){ const mx=bx+bw*marker/100; c.fillStyle='#fff8e0'; c.fillRect(mx-3,by-8,6,bh+16); }
+}
+function jarRects(){
+  return ING.map((g,i)=>({ id:g.id, x:22+i*92, y:14, w:74, h:58 }));
+}
+function drawIng(c,id,x,y,s){
+  s=s||1;
+  if(id==='hierba'){ c.fillStyle='#7a8f3c'; c.fillRect(x-1*s,y-8*s,2*s,10*s); c.fillRect(x-6*s,y-6*s,2*s,8*s); c.fillRect(x+4*s,y-6*s,2*s,8*s); }
+  if(id==='seta'){ c.fillStyle='#b3402b'; c.fillRect(x-7*s,y-8*s,14*s,6*s); c.fillStyle='#f5efe0'; c.fillRect(x-4*s,y-7*s,2*s,2*s); c.fillRect(x+2*s,y-6*s,2*s,2*s); c.fillRect(x-2*s,y-2*s,4*s,7*s); }
+  if(id==='hueso'){ c.fillStyle='#f5efe0'; c.fillRect(x-8*s,y-2*s,16*s,4*s); c.fillRect(x-10*s,y-4*s,4*s,4*s); c.fillRect(x-10*s,y,4*s,4*s); c.fillRect(x+6*s,y-4*s,4*s,4*s); c.fillRect(x+6*s,y,4*s,4*s); }
+  if(id==='ajo'){
+    c.fillStyle='#e8dcc0'; c.fillRect(x-6*s,y-6*s,12*s,11*s);
+    c.fillStyle='#c9b07a'; c.fillRect(x-6*s,y-6*s,12*s,2*s);
+    c.strokeStyle='#a8946a'; c.lineWidth=Math.max(1,s);
+    c.beginPath(); c.moveTo(x,y-6*s); c.lineTo(x,y+5*s); c.stroke();
+    c.beginPath(); c.moveTo(x-6*s,y-1*s); c.lineTo(x+6*s,y-1*s); c.stroke();
+    c.fillStyle='#f0e8d0'; c.fillRect(x-2*s,y-9*s,4*s,4*s);
+  }
+  if(id==='gota'){ c.fillStyle='#7ec8ff'; c.fillRect(x-1.5*s,y-8*s,3*s,4*s); c.fillRect(x-4*s,y-4*s,8*s,7*s); c.fillStyle='#c8e8ff'; c.fillRect(x-2.5*s,y-3*s,2*s,2*s); }
+}
+function drawMini(){
+  if(S.p){
+    const d = Math.round(S.p.dolor);
+    $('miniDolorTxt').textContent = d;
+    $('miniDolorFill').style.width = clamp(d,0,100)+'%';
+  }
+  const c=miCtx; c.fillStyle='#15101c'; c.fillRect(0,0,480,240);
+  c.font='bold 14px Courier New';
+
+  if(mini.type==='extract'){
+    c.fillStyle='#6b4a2a'; c.fillRect(60,60,70,80);
+    c.fillStyle='#7a8f3c'; c.fillRect(75,80,20,18);
+    c.fillStyle='#4a3018'; c.fillRect(64,140,18,30); c.fillRect(108,140,18,30);
+    const grab = mini.hits*4;
+    c.fillStyle='#9a9a9a';
+    c.fillRect(40-grab,40,20,12); c.fillRect(130+grab,40,20,12);
+    c.fillRect(48,20,8,30); c.fillRect(134,20,8,30);
+    barUI(c,220,40,220,34,[[mini.zone[0],mini.zone[1],'#7a8f3c']],null,mini.marker);
+    c.fillStyle='#e6d3a3';
+    c.fillText('Aciertos: '+mini.hits+' / '+mini.need, 220, 110);
+    c.fillText('¡Pulsa en la ZONA VERDE!', 220, 132);
+    if(mini.finishing){ successBanner(c, '¡POP! 🦷', 240, 28, '#ffe27a'); }
+  }
+
+  if(mini.type==='cauter'){
+    c.fillStyle='#3a2418'; c.fillRect(40,150,120,50);
+    for(let i=0;i<6;i++){ c.fillStyle= (S.t+i*7)%14<7 ? '#ff6a2a':'#ffb53c'; c.fillRect(50+i*18,138+((S.t+i*5)%10<5?0:4),12,14); }
+    const hcol = mini.heat>86? '#ff3a2a' : mini.heat>79? '#ff9a3c' : mini.heat>30? '#b86a4a' : '#777';
+    c.fillStyle='#5a4530'; c.fillRect(90,60,12,84);
+    c.fillStyle=hcol; c.fillRect(84,40,24,26);
+    barUI(c,220,40,220,34,[[79,86,'#c8732a'],[86,100,'#a01010']],mini.heat,null);
+    c.fillStyle='#e6d3a3';
+    c.fillText('Calor: '+Math.round(mini.heat), 220, 110);
+    c.fillText('Suelta en la ZONA NARANJA (¡es angosta!)', 220, 132);
+    if(mini.finishing){ successBanner(c, '¡TSSSSSS! 💨', 240, 28, '#ff9a3c'); }
+  }
+
+  if(mini.type==='leeches'){
+    c.fillStyle=S.p.cfg.skin; c.fillRect(80,40,330,160);
+    c.fillStyle='#e88a7a'; c.fillRect(140,70,200,100);
+    c.fillStyle='#d96a5a'; c.fillRect(200,100,70,40);
+    mini.spots.forEach(s=>{
+      if(!s.done){
+        c.strokeStyle = (S.t%20<10)? '#ffe27a' : '#fff';
+        c.lineWidth=3; c.beginPath(); c.arc(s.x,s.y,22,0,7); c.stroke();
+        c.fillStyle='#fff'; c.font='bold 12px Courier New'; c.fillText('AQUÍ', s.x-16, s.y+4);
+      } else {
+        const w = Math.sin(S.t/5 + s.x)*4;
+        c.fillStyle='#3e5d33';
+        c.fillRect(s.x-14, s.y-6+w/2, 28, 12);
+        c.fillRect(s.x+10+w, s.y-10, 10, 8);
+        c.fillStyle='#2a4022'; c.fillRect(s.x-10,s.y-2,20,4);
+      }
+    });
+    c.fillStyle='#e6d3a3'; c.font='bold 14px Courier New';
+    c.fillText('Sanguijuelas colocadas: '+mini.leechDone+' / '+mini.spots.length, 130, 226);
+    if(mini.finishing){ successBanner(c, 'Slurp slurp... ¡hinchazón fuera!', 240, 28, '#9fe07a'); }
+  }
+
+  if(mini.type==='bleed'){
+    c.fillStyle=S.p.cfg.skin; c.fillRect(40,60,180,50);
+    c.fillStyle='#b3202b'; c.fillRect(150,82,8,6);
+    c.fillStyle='#5a4530'; c.fillRect(120,180,80,30);
+    c.fillStyle='#b3202b';
+    const lv = 26*mini.blood/100;
+    c.fillRect(124,206-lv,72,lv+2);
+    if(mini.phase==='align'){
+      barUI(c,260,40,180,34,[[mini.zone[0],mini.zone[1],'#7a8f3c']],null,mini.marker);
+      c.fillStyle='#e6d3a3';
+      c.fillText('Cuenco: 0%', 260, 110);
+      c.fillText('¡Clava en la ZONA VERDE!', 260, 132);
+    } else {
+      if(S.t%12<6){ c.fillStyle='#b3202b'; c.fillRect(152,88+((S.t*2)%14),4,8); }
+      c.fillStyle='#e6d3a3';
+      c.fillText('Cuenco: '+Math.round(mini.blood)+'%', 260, 90);
+      c.fillText('Gotas: '+mini.drops+' / '+mini.dropsNeed, 260, 112);
+      c.fillText('¡Pulsa para sacar sangre!', 260, 134);
+    }
+    if(mini.finishing){ successBanner(c, 'Humores equilibrados ✓', 240, 28, '#9fe07a'); }
+  }
+
+  if(mini.type==='shave'){
+    // cara inferior gigante
+    c.fillStyle=S.p.cfg.skin; c.fillRect(50,44,380,170);
+    c.fillStyle='#5e2730'; c.fillRect(200,60,80,14); // boca arriba del lienzo
+    // pelambres
+    mini.tufts.forEach(tf=>{
+      if(tf.done) return;
+      c.fillStyle=S.p.cfg.hair;
+      c.fillRect(tf.x-tf.r, tf.y-tf.r*0.6, tf.r*2, tf.r*1.2);
+      c.fillRect(tf.x-tf.r*0.6, tf.y-tf.r, tf.r*1.2, tf.r*2);
+      c.fillStyle='#00000033';
+      c.fillRect(tf.x-tf.r*0.4, tf.y-tf.r*0.4, tf.r*0.8, tf.r*0.8);
+    });
+    // verrugas
+    mini.moles.forEach(m=>{
+      c.fillStyle = m.hit>0 ? ((S.t%8<4)?'#ff5a5a':'#b3202b') : '#c04848';
+      c.fillRect(m.x-5,m.y-5,10,10);
+      c.fillStyle='#00000044'; c.fillRect(m.x-2,m.y-2,4,4);
+      if(m.hit>0) m.hit--;
+    });
+    // navaja siguiendo el puntero
+    c.save(); c.translate(mini.px, mini.py); c.rotate(-0.5);
+    c.fillStyle='#d8d8e0'; c.fillRect(-4,-34,8,30);
+    c.fillStyle='#6b4527'; c.fillRect(-5,-6,10,20);
+    c.restore();
+    const left = mini.tufts.filter(t=>!t.done).length;
+    c.fillStyle='#e6d3a3'; c.font='bold 14px Courier New';
+    c.fillText('Pelambres restantes: '+left+'  ·  ¡Evita las verrugas!', 90, 232);
+    if(mini.finishing){ successBanner(c, '¡Afeitado digno de un conde!', 240, 28, '#9fe07a'); }
+  }
+
+  if(mini.type==='stitch'){
+    c.fillStyle=S.p.cfg.skin; c.fillRect(30,40,420,170);
+    // herida abierta
+    c.fillStyle='#7a1018';
+    c.beginPath();
+    c.moveTo(60,118);
+    for(let i=0;i<=8;i++){ c.lineTo(60+i*45, 118+(i%2? -12:12)); }
+    c.lineTo(420,132);
+    for(let i=8;i>=0;i--){ c.lineTo(60+i*45, 132+(i%2? -8:14)); }
+    c.closePath(); c.fill();
+    c.fillStyle='#b3202b'; c.fillRect(70,116,340,8);
+    // hilo ya cosido
+    c.strokeStyle='#e6d3a3'; c.lineWidth=3;
+    for(let i=1;i<mini.stitchIdx;i++){
+      const a=mini.stitches[i-1], b=mini.stitches[i];
+      c.beginPath(); c.moveTo(a.x,a.y); c.lineTo(b.x,b.y); c.stroke();
+    }
+    // puntos
+    mini.stitches.forEach((s2,i)=>{
+      if(s2.done){
+        c.fillStyle='#3a3a3a'; c.fillRect(s2.x-4,s2.y-4,8,8);
+      } else if(i===mini.stitchIdx){
+        c.strokeStyle=(S.t%16<8)?'#ffe27a':'#fff'; c.lineWidth=3;
+        c.strokeRect(s2.x-11,s2.y-11,22,22);
+        c.fillStyle='#ffe27a'; c.fillRect(s2.x-3,s2.y-3,6,6);
+      } else {
+        c.fillStyle='#ffffff88'; c.fillRect(s2.x-3,s2.y-3,6,6);
+      }
+    });
+    c.fillStyle='#e6d3a3'; c.font='bold 14px Courier New';
+    c.fillText('Puntadas: '+mini.stitchIdx+' / '+mini.stitches.length, 160, 232);
+    if(mini.finishing){ successBanner(c, '¡Costura de maestro!', 240, 28, '#9fe07a'); }
+  }
+
+  if(mini.type==='brew'){
+    // estantería con frascos
+    c.fillStyle='#3a2418'; c.fillRect(10,8,460,72);
+    jarRects().forEach(j=>{
+      c.fillStyle='#5a4530'; c.fillRect(j.x,j.y,j.w,j.h);
+      c.fillStyle='#2a1c12'; c.fillRect(j.x+4,j.y+4,j.w-8,j.h-8);
+      drawIng(c, j.id, j.x+j.w/2, j.y+j.h/2+6, 1.4);
+    });
+    // receta
+    c.fillStyle='#e6d3a3'; c.font='bold 13px Courier New';
+    c.fillText('RECETA:', 22, 102);
+    mini.recipe.forEach((id,i)=>{
+      const x=110+i*66;
+      c.fillStyle = i<mini.picked ? '#7a8f3c' : '#000';
+      c.fillRect(x-18,88,40,26);
+      drawIng(c, id, x+2, 106, 1);
+      if(i<mini.picked){ c.fillStyle='#9fe07a'; c.font='bold 14px Courier New'; c.fillText('✓', x+16, 100); }
+      if(i===mini.picked && mini.phase==='pick' && S.t%20<10){ c.strokeStyle='#ffe27a'; c.lineWidth=2; c.strokeRect(x-19,87,42,28); }
+    });
+    // caldero
+    const colors=['#3a4a5a','#4a6a3c','#6a8f3c','#8fae4c','#c8973a'];
+    c.fillStyle='#1a1a1a'; c.fillRect(180,150,120,60);
+    c.fillStyle='#000'; c.fillRect(170,146,140,10);
+    c.fillStyle=colors[Math.min(mini.picked,colors.length-1)];
+    c.fillRect(188,152,104,10);
+    if(S.t%14<7){ c.fillRect(200+((S.t)%40),148,6,4); }
+    // fuego
+    for(let i=0;i<4;i++){ c.fillStyle=(S.t+i*6)%12<6?'#ff6a2a':'#ffb53c'; c.fillRect(196+i*24,212+((S.t+i*4)%8<4?0:3),12,12); }
+    // humo de error
+    if(mini.smoke>0){
+      mini.smoke--;
+      c.fillStyle='#88888866';
+      c.fillRect(210,150-(44-mini.smoke)*2,24,18);
+      c.fillRect(230,160-(44-mini.smoke)*2,18,14);
+    }
+    if(mini.phase==='stir'){
+      barUI(c,120,124,240,20,[[mini.zone[0],mini.zone[1],'#7a8f3c']],null,mini.marker);
+      c.fillStyle='#e6d3a3'; c.font='bold 13px Courier New';
+      c.fillText('¡MEZCLA en la zona verde! Aciertos: '+mini.hits+' / '+mini.need, 90, 236);
+    } else {
+      c.fillStyle='#e6d3a3'; c.font='bold 13px Courier New';
+      c.fillText('Pulsa los frascos siguiendo la receta', 116, 236);
+    }
+    if(mini.finishing){ successBanner(c, '¡Remedio listo! Glu glu...', 240, 28, '#9fe07a'); }
+  }
+
+  if(mini.type==='splint'){
+    // brazo con fractura
+    c.fillStyle=S.p.cfg.skin; c.fillRect(60,96,150,44);
+    c.fillStyle=S.p.cfg.skin; c.fillRect(270,96,150,44);
+    c.fillStyle='#b3202b'; c.fillRect(206,92,8,52); c.fillRect(266,92,8,52);
+    if(mini.phase==='align'){
+      // fragmento de hueso deslizándose
+      const bx = 150 + (mini.bonePos/100)*130;
+      c.fillStyle='#f5efe0'; c.fillRect(bx,104,56,28);
+      c.fillStyle='#cfc4a8'; c.fillRect(bx+4,110,48,8);
+      barUI(c,80,170,320,26,[[mini.alignZone[0],mini.alignZone[1],'#7a8f3c']],null,mini.bonePos);
+      c.fillStyle='#e6d3a3'; c.font='bold 13px Courier New';
+      c.fillText('FIJA el hueso cuando pase por la zona verde', 90, 226);
+    } else {
+      // hueso encajado + vendaje progresivo
+      c.fillStyle='#f5efe0'; c.fillRect(212,104,56,28);
+      c.fillStyle='#8a6a3a'; c.fillRect(120,90,240,7); c.fillRect(120,140,240,7);
+      const wraps = Math.floor(mini.wrap/12);
+      c.fillStyle='#e6d3a3';
+      for(let i=0;i<wraps;i++){ c.fillRect(130+i*28, 88, 14, 62); }
+      barUI(c,80,170,320,26,[[95,100,'#7a8f3c']],mini.wrap,null);
+      c.fillStyle='#e6d3a3'; c.font='bold 13px Courier New';
+      c.fillText('¡PULSA RÁPIDO para vendar! (se afloja solo)', 90, 226);
+    }
+    if(mini.finishing){ successBanner(c, '¡Brazo entablillado!', 240, 28, '#9fe07a'); }
+  }
+}
+
+// ============================== BUCLE PRINCIPAL ==============================
+function update(){
+  S.t++;
+  if(S.shake>0) S.shake-=0.6;
+  if(S.scream>0) S.scream--;
+  if(S.splash>0) S.splash--;
+  if(S.blink>0){ S.blink--; }
+  else { S.blinkT--; if(S.blinkT<=0){ S.blink=7; S.blinkT=rnd(120,300); } }
+
+  const p=S.p;
+  if(p && p.wet>0) p.wet--;
+  if(S.t%20===0 && S.startTime && S.state!=='over'){
+    $('hudTime').textContent = formatTime(Date.now()-S.startTime);
+  }
+  if(p && (S.state==='play'||S.state==='mini') && p.awake){
+    const a=afflictions(p);
+    if(a.done<a.total){
+      const urgencyMult = S.day>=2 ? 1.1 : 1.0;
+      p.dolor = clamp(p.dolor + (p.painRate/18)*urgencyMult, 0, 100);
+      if(p.dolor>=100) hurt(0.001);
+      if(S.t%30===0) hud();
+    }
+  }
+  if(S.state==='mini'){
+    if(mini.finishing>0){
+      mini.finishing--;
+      if(mini.finishing===0){
+        if(mini.type==='leeches'){ resolveAil(S.p,'flemon'); log('🪱 Las sanguijuelas, gorditas y felices, vuelven al frasco. El flemón ha bajado.'); }
+        closeMini();
+      }
+    } else {
+      if(mini.type==='extract' || (mini.type==='brew' && mini.phase==='stir') || (mini.type==='bleed' && mini.phase==='align')){
+        mini.marker += mini.dir*mini.speed;
+        if(mini.marker>=100){ mini.marker=100; mini.dir=-1; }
+        if(mini.marker<=0){ mini.marker=0; mini.dir=1; }
+      }
+      if(mini.type==='cauter'){
+        if(mini.holding) mini.heat=clamp(mini.heat+0.9,0,100);
+        else mini.heat=clamp(mini.heat-0.5,0,100);
+        if(mini.heat>=100){ mini.holding=false; mini.heat=0; hurt(12); if(S.state==='mini') log('🔥 ¡El hierro se puso BLANCO! Lo sueltas del susto sobre su mejilla. Ups.'); }
+      }
+      if(mini.type==='splint'){
+        if(mini.phase==='align'){
+          mini.bonePos += mini.boneDir*mini.boneSpeed;
+          if(mini.bonePos>=100){ mini.bonePos=100; mini.boneDir=-1; }
+          if(mini.bonePos<=0){ mini.bonePos=0; mini.boneDir=1; }
+        } else if(mini.phase==='wrap'){
+          mini.wrap = clamp(mini.wrap - (0.45+0.1*(S.day-1)), 0, 100);
+        }
+      }
+    }
+    if(S.state==='mini') drawMini();
+  }
+  drawFace();
+  if(S.p) drawMouth();
+  requestAnimationFrame(update);
+}
+
+// ============================== FLUJO ==============================
+function nextPatient(){
+  const cfg = S.roster[S.qIdx];
+  S.p = makePatient(cfg, S.day);
+  S.tool=null; S.splats=[]; S.floats=[]; S.splash=0;
+  document.querySelectorAll('.tool').forEach(b=>b.classList.remove('active'));
+  $('interrogarBtn').disabled = false;
+  updateToolBadge();
+  closeDrawer();
+  $('faintOv').classList.add('hidden');
+  S.state='play';
+  const b=$('bubble');
+  b.textContent = introLine(S.p);
+  b.style.display='block';
+  setTimeout(()=>{ b.style.display='none'; }, 8000);
+  const a=afflictions(S.p);
+  log('🚪 Entra '+S.p.name+' con '+a.total+' mal(es). Lee su queja arriba, o usa 💬 INTERROGAR si te la perdiste.');
+  hud();
+}
+function startGame(){
+  audio();
+  $('titleOv').classList.add('hidden');
+  S.day=1; S.coins=0; S.rep=50; S.potions=3; S.p=null; S.roster=[]; S.qIdx=0;
+  S.patientsServed=0; S.startTime=Date.now();
+  showDayIntro();
+  beep(523,.1,'square',.05); setTimeout(()=>beep(659,.1,'square',.05),110); setTimeout(()=>beep(784,.2,'square',.05),220);
+}
+$('startBtn').addEventListener('click', startGame);
+
+// ============================== PANEL DE AJUSTES ==============================
+function syncSettingsUI(){
+  $('musicToggleBtn').textContent = S.musicOn ? '🔊 Música: Activada' : '🔇 Música: Desactivada';
+  $('volSlider').value = Math.round(S.musicVolume*100);
+  $('volLabel').textContent = Math.round(S.musicVolume*100)+'%';
+  $('sfxToggleBtn').textContent = S.sfxOn ? '🔔 Sonidos de juego: Activados' : '🔕 Sonidos de juego: Desactivados';
+  renderRecordBox();
+}
+function toggleMusic(){
+  S.musicOn = !S.musicOn;
+  const audio = $('bgMusic');
+  if(S.musicOn){
+    if(audio.src) audio.play().catch(()=>{});
+  } else {
+    audio.pause();
+  }
+  saveSettings();
+  if(!$('settingsOv').classList.contains('hidden')) syncSettingsUI();
+}
+function openSettings(){
+  syncSettingsUI();
+  $('settingsOv').classList.remove('hidden');
+}
+$('gearBtn').addEventListener('click', openSettings);
+$('headerGearBtn').addEventListener('click', openSettings);
+$('settingsCloseBtn').addEventListener('click', ()=>{
+  $('settingsOv').classList.add('hidden');
+});
+$('musicToggleBtn').addEventListener('click', toggleMusic);
+$('sfxToggleBtn').addEventListener('click', ()=>{
+  S.sfxOn = !S.sfxOn;
+  saveSettings();
+  syncSettingsUI();
+});
+$('volSlider').addEventListener('input', e=>{
+  S.musicVolume = clamp(parseInt(e.target.value,10)/100, 0, 1);
+  $('bgMusic').volume = S.musicVolume;
+  $('volLabel').textContent = Math.round(S.musicVolume*100)+'%';
+  saveSettings();
+});
+$('volSlider').addEventListener('change', saveSettings);
+initSettingsFromStorage();
+
+hud();
+update();
+</script>
+</body>
+</html>

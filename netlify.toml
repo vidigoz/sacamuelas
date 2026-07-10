@@ -1,0 +1,19 @@
+# Configuración de Netlify para El Sacamuelas
+# El sitio es estático (index.html + mp3) y usa funciones serverless para el ranking.
+
+[build]
+  # No hay paso de compilación del frontend; solo se publica la carpeta actual.
+  publish = "."
+  functions = "netlify/functions"
+
+# Hace que el navegador pueda llamar /api/save-score y /api/leaderboard
+# en lugar de la ruta larga /.netlify/functions/...
+[[redirects]]
+  from = "/api/save-score"
+  to = "/.netlify/functions/save-score"
+  status = 200
+
+[[redirects]]
+  from = "/api/leaderboard"
+  to = "/.netlify/functions/leaderboard"
+  status = 200

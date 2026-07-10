@@ -1,0 +1,10 @@
+{
+  "name": "sacamuelas",
+  "version": "1.0.0",
+  "description": "El Sacamuelas — juego con ranking global en Neon",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@neondatabase/serverless": "^0.10.4"
+  }
+}
