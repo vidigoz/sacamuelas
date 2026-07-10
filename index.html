@@ -151,33 +151,40 @@
   .card .small{font-size:11px; opacity:.85;}
 
   /* --- Pantalla de título / historia --- */
-  #titleOv .subtitle{
-    font-size:12px; letter-spacing:3px; text-transform:uppercase;
-    color:var(--wood-d); margin:-2px 0 12px; font-weight:bold;
+  #titleLogo{
+    display:block; width:100%; max-width:360px; height:auto;
+    margin:0 auto 10px; image-rendering:auto;
+    filter:drop-shadow(4px 4px 0 #0008);
   }
   #titleOv .story{
-    font-size:13.5px; line-height:1.65; text-align:left;
-    margin:0 auto 12px; max-width:480px; color:var(--ink);
+    font-size:14px; line-height:1.65; text-align:center;
+    margin:0 auto 14px; max-width:460px; color:var(--ink);
   }
   #titleOv .story .lead{ font-size:14.5px; }
   #titleOv .story b{ color:var(--blood); }
-  /* separador ornamental */
-  #titleOv .divider{
-    border:none; height:2px; width:70%; margin:12px auto;
-    background:linear-gradient(90deg, transparent, var(--wood-d), transparent);
-  }
-  /* caja de herramientas con fondo oscuro para máximo contraste */
+  /* caja de herramientas colapsable */
   #titleOv .tools-help{
     background:var(--ink); color:var(--parch);
     border:3px solid var(--wood-d); box-shadow:4px 4px 0 #000;
-    padding:12px 14px; margin:12px auto 14px; max-width:480px; text-align:left;
+    padding:0; margin:0 auto 14px; max-width:480px; text-align:left;
+    overflow:hidden;
   }
   #titleOv .tools-help .th-title{
-    display:block; text-align:center; color:var(--gold);
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    width:100%; background:transparent; border:none; cursor:pointer;
+    color:var(--gold); font-family:inherit;
     font-size:12px; letter-spacing:2px; text-transform:uppercase;
-    font-weight:bold; margin-bottom:8px;
+    font-weight:bold; padding:12px 14px;
+    touch-action:manipulation;
   }
-  #titleOv .tools-help ul{ list-style:none; }
+  #titleOv .tools-help .th-title:hover{ background:#00000044; }
+  #titleOv .tools-help .th-arrow{ transition:transform .25s ease; font-size:11px; }
+  #titleOv .tools-help.collapsed .th-arrow{ transform:rotate(-90deg); }
+  #titleOv .tools-help ul{
+    list-style:none; padding:0 14px 12px;
+    max-height:400px; transition:max-height .3s ease, opacity .2s ease, padding .3s ease;
+  }
+  #titleOv .tools-help.collapsed ul{ max-height:0; opacity:0; padding-top:0; padding-bottom:0; }
   #titleOv .tools-help li{
     font-size:12.5px; line-height:1.9; padding:1px 0;
     border-bottom:1px solid rgba(230,211,163,.12);
@@ -457,18 +464,16 @@
   <div class="overlay" id="titleOv">
     <div class="card">
       <button id="gearBtn" title="Ajustes">⚙️</button>
-      <h1>🦷 EL SACAMUELAS 🦷</h1>
-      <p class="subtitle">Anno Domini · 1347</p>
+      <img id="titleLogo" src="iconos/logo.png" alt="El Sacamuelas"
+           onerror="this.style.display='none';document.getElementById('titleLogoFallback').style.display='block';">
+      <h1 id="titleLogoFallback" style="display:none;">🦷 EL SACAMUELAS 🦷</h1>
 
       <div class="story">
-        <p class="lead">Es el año <b>1347</b> y la peste ya asoma tras los montes. En tu aldea no hay médicos: solo estás <b>tú</b>, el barbero-cirujano.</p>
-        <p>Tu silla no distingue rango ni fortuna. Escucha la queja de cada aldeano, <b>elige la herramienta correcta</b> y cúralo antes de que el dolor lo venza. Atiende a cuantos puedas... porque en cuanto un paciente muera en tu silla, tu reputación caerá para siempre.</p>
+        <p class="lead">Es el año <b>1347</b>, la peste se aproxima. La gente depende de tus habilidades para curarlos. Usa tus herramientas para curar al máximo de pacientes que puedas.</p>
       </div>
 
-      <hr class="divider">
-
-      <div class="tools-help">
-        <span class="th-title">⚒️ Tu instrumental</span>
+      <div class="tools-help collapsed" id="toolsHelp">
+        <button class="th-title" id="toolsHelpToggle">⚒️ Tus herramientas <span class="th-arrow">▾</span></button>
         <ul>
           <li>🗜️ <b>Tenazas</b> — arranca muelas podridas o flojas</li>
           <li>🔥 <b>Hierro</b> — cauteriza los huecos que sangran</li>
@@ -479,7 +484,7 @@
           <li>⚗️ <b>Caldero</b> — prepara remedios con la receta correcta</li>
           <li>🦴 <b>Tablillas</b> — entablilla huesos rotos</li>
           <li>🧪 <b>Poción</b> — calma el dolor del paciente</li>
-          <li>💬 <b>Interrogar</b> — repite la pista del paciente (1 vez)</li>
+          <li>💬 <b>Interrogar</b> — repite la pista del paciente</li>
         </ul>
       </div>
 
@@ -487,7 +492,6 @@
         <button class="btn" id="tutorialBtn">📖 TUTORIAL: Aprende a jugar</button>
         <button class="btn" id="startBtn">⚔️ ABRIR LA BARBERÍA</button>
       </div>
-      <p class="small" style="margin-top:8px;opacity:.75;">¿Primera vez? Empieza por el tutorial: atenderás a un aldeano con todos los males, paso a paso.</p>
     </div>
   </div>
 
@@ -2551,6 +2555,8 @@ function finishTutorial(){
 }
 
 $('tutorialBtn').addEventListener('click', startTutorial);
+// Sección colapsable de herramientas en el menú de inicio
+$('toolsHelpToggle').addEventListener('click', ()=>{ $('toolsHelp').classList.toggle('collapsed'); });
 // Tocar el banner del tutorial lo pliega/despliega (para liberar espacio en móvil)
 $('tutorBanner').addEventListener('click', ()=>{ $('tutorBanner').classList.toggle('mini'); });
 // Botón ▾ del header móvil: expande/colapsa los datos secundarios
