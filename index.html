@@ -2,8 +2,19 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>El Sacamuelas</title>
+
+<!-- PWA: instalable y jugable offline -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1b1320">
+<meta name="description" content="Juego de simulación medieval: sé el barbero-cirujano del pueblo en 1347.">
+<link rel="icon" href="iconos/icon-192.png">
+<link rel="apple-touch-icon" href="iconos/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Sacamuelas">
+<meta name="mobile-web-app-capable" content="yes">
 <style>
   :root{
     --night:#1b1320; --wood:#4a2f1d; --wood-d:#2d1a0f; --wood-l:#6b4527;
@@ -2631,6 +2642,15 @@ loadHomeLeaderboard(); // cargar el ranking del menú de inicio
 
 hud();
 update();
+
+// ============================== PWA: registrar service worker ==============================
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('sw.js').catch(err=>{
+      console.warn('No se pudo registrar el service worker:', err);
+    });
+  });
+}
 </script>
 </body>
 </html>

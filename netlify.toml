@@ -17,3 +17,16 @@
   from = "/api/leaderboard"
   to = "/.netlify/functions/leaderboard"
   status = 200
+
+# El service worker no debe cachearse en el navegador/CDN, para que las
+# actualizaciones de versión (CACHE_VERSION) lleguen de inmediato.
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+    Service-Worker-Allowed = "/"
+
+[[headers]]
+  for = "/manifest.json"
+  [headers.values]
+    Content-Type = "application/manifest+json"
