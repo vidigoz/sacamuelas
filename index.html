@@ -111,6 +111,41 @@
   .card h2{font-size:17px; margin-bottom:8px;}
   .card p{font-size:12.5px; margin-bottom:8px; line-height:1.5;}
   .card .small{font-size:11px; opacity:.85;}
+
+  /* --- Pantalla de título / historia --- */
+  #titleOv .subtitle{
+    font-size:12px; letter-spacing:3px; text-transform:uppercase;
+    color:var(--wood-d); margin:-2px 0 12px; font-weight:bold;
+  }
+  #titleOv .story{
+    font-size:13.5px; line-height:1.65; text-align:left;
+    margin:0 auto 12px; max-width:480px; color:var(--ink);
+  }
+  #titleOv .story .lead{ font-size:14.5px; }
+  #titleOv .story b{ color:var(--blood); }
+  /* separador ornamental */
+  #titleOv .divider{
+    border:none; height:2px; width:70%; margin:12px auto;
+    background:linear-gradient(90deg, transparent, var(--wood-d), transparent);
+  }
+  /* caja de herramientas con fondo oscuro para máximo contraste */
+  #titleOv .tools-help{
+    background:var(--ink); color:var(--parch);
+    border:3px solid var(--wood-d); box-shadow:4px 4px 0 #000;
+    padding:12px 14px; margin:12px auto 14px; max-width:480px; text-align:left;
+  }
+  #titleOv .tools-help .th-title{
+    display:block; text-align:center; color:var(--gold);
+    font-size:12px; letter-spacing:2px; text-transform:uppercase;
+    font-weight:bold; margin-bottom:8px;
+  }
+  #titleOv .tools-help ul{ list-style:none; }
+  #titleOv .tools-help li{
+    font-size:12.5px; line-height:1.9; padding:1px 0;
+    border-bottom:1px solid rgba(230,211,163,.12);
+  }
+  #titleOv .tools-help li:last-child{ border-bottom:none; }
+  #titleOv .tools-help b{ color:var(--gold); }
   #gearBtn{
     position:absolute; top:8px; right:8px; z-index:2;
     background:var(--wood); color:var(--parch); border:2px solid var(--ink);
@@ -324,15 +359,32 @@
     <div class="card">
       <button id="gearBtn" title="Ajustes">⚙️</button>
       <h1>🦷 EL SACAMUELAS 🦷</h1>
-      <p>Es el año <b>1347</b>, eres el barbero-cirujano del pueblo: sacas muelas, cauterizas, pones sanguijuelas, haces sangrías, afeitas, coses heridas, preparas pociones y entablillas huesos. Toda la aldea pasará por tu silla.</p>
-      <p>Aprende a usar tus herramientas para sanar a la mayor cantidad de aldeanos posible.</p>
-      <p class="small">
-        🗜️ <b>Tenazas</b>: arranca muelas malas · 🔥 <b>Hierro</b>: cauteriza huecos sangrantes<br>
-        🪱 <b>Sanguijuelas</b>: flemones · 🔪 <b>Lanceta</b>: sangría de humores<br>
-        🪒 <b>Navaja</b>: afeita greñas (¡cuidado con las verrugas!) · 🪡 <b>Aguja</b>: cose heridas<br>
-        ⚗️ <b>Caldero</b>: prepara remedios con la receta correcta · 🦴 <b>Tablillas</b>: huesos rotos<br>
-        🧪 <b>Poción</b>: calma el dolor · 💬 <b>Interrogar</b>: repite la pista del paciente (1 vez)
-      </p>
+      <p class="subtitle">Anno Domini · 1347</p>
+
+      <div class="story">
+        <p class="lead">Corre el año <b>1347</b> y la peste ya asoma tras los montes. En tu aldea no hay médicos: solo estás <b>tú</b>, el barbero-cirujano.</p>
+        <p>Tu silla no distingue rango ni fortuna. Por ella pasarán campesinos, monjes, damas delicadas y hasta la temida bruja del bosque. Sacas muelas, cauterizas heridas, pones sanguijuelas, haces sangrías, afeitas greñas, coses carne, mezclas pociones y entablillas huesos rotos.</p>
+        <p>Escucha la queja de cada aldeano, <b>elige la herramienta correcta</b> y cúralo antes de que el dolor lo venza. Atiende a cuantos puedas... porque en cuanto un paciente muera en tu silla, tu reputación caerá para siempre.</p>
+      </div>
+
+      <hr class="divider">
+
+      <div class="tools-help">
+        <span class="th-title">⚒️ Tu instrumental</span>
+        <ul>
+          <li>🗜️ <b>Tenazas</b> — arranca muelas podridas o flojas</li>
+          <li>🔥 <b>Hierro</b> — cauteriza los huecos que sangran</li>
+          <li>🪱 <b>Sanguijuelas</b> — desinflaman flemones</li>
+          <li>🔪 <b>Lanceta</b> — sangría para equilibrar los humores</li>
+          <li>🪒 <b>Navaja</b> — afeita greñas (¡ojo con las verrugas!)</li>
+          <li>🪡 <b>Aguja</b> — cose heridas abiertas</li>
+          <li>⚗️ <b>Caldero</b> — prepara remedios con la receta correcta</li>
+          <li>🦴 <b>Tablillas</b> — entablilla huesos rotos</li>
+          <li>🧪 <b>Poción</b> — calma el dolor del paciente</li>
+          <li>💬 <b>Interrogar</b> — repite la pista del paciente (1 vez)</li>
+        </ul>
+      </div>
+
       <button class="btn" id="startBtn">⚔️ ABRIR LA BARBERÍA</button>
     </div>
   </div>
