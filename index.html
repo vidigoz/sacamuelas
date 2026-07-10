@@ -37,6 +37,7 @@
   }
   header .stat{font-weight:bold; font-size:13px; letter-spacing:1px;}
   header .stat b{color:var(--gold);}
+  #hdrToggle{ display:none; } /* solo aparece en móvil */
   .music-btn{
     background:transparent; border:none; color:var(--parch);
     font-size:16px; cursor:pointer; padding:0; line-height:1;
@@ -154,16 +155,23 @@
   #tutorBanner{
     background:linear-gradient(180deg, #3a2c14, #241a0c);
     border:3px solid var(--gold); box-shadow:0 4px 0 #000;
-    color:var(--parch); padding:8px 12px; margin:0 0 8px;
-    text-align:left; line-height:1.5;
+    color:var(--parch); padding:6px 10px; margin:0 0 8px;
+    text-align:left; line-height:1.5; cursor:pointer;
   }
+  #tutorHead{ display:flex; align-items:center; gap:8px; }
   #tutorStepNo{
     color:var(--gold); font-weight:bold; font-size:11px;
-    letter-spacing:1.5px; text-transform:uppercase; margin-bottom:3px;
+    letter-spacing:1.5px; text-transform:uppercase;
+    flex:1; min-width:0;
   }
-  #tutorText{ font-size:13px; }
+  #tutorProgress{ font-size:11px; opacity:.85; white-space:nowrap; }
+  #tutorArrow{
+    color:var(--gold); font-size:12px; transition:transform .25s ease;
+  }
+  #tutorBanner.mini #tutorArrow{ transform:rotate(-90deg); }
+  #tutorText{ font-size:13px; margin-top:4px; }
   #tutorText b{ color:var(--gold); }
-  #tutorProgress{ font-size:11px; opacity:.8; margin-top:4px; }
+  #tutorBanner.mini #tutorText{ display:none; }
   /* Herramienta a usar, resaltada durante el tutorial */
   .tool.tut-hint{
     animation:tutPulse 1s ease-in-out infinite;
@@ -247,19 +255,37 @@
     #game{ padding:6px; border-width:4px; }
     #topBar{
       position:sticky; top:0; z-index:4; background:#241629;
-      margin:-6px -6px 6px; padding:6px 6px 4px;
+      margin:-6px -6px 6px; padding:4px 6px 4px;
     }
+    /* Header colapsado por defecto: una sola fila con lo esencial.
+       El botón ▾ lo expande para ver cola, paciente y fama. */
     header{
-      display:grid; grid-template-columns:1fr 1fr; gap:4px 8px;
-      padding:6px 8px;
-      background:var(--wood-d);
+      display:flex; flex-wrap:nowrap; align-items:center; gap:6px;
+      padding:4px 30px 4px 8px; position:relative;
+      background:var(--wood-d); margin-bottom:0;
     }
-    header .stat{ font-size:11px; }
-    header .repStat{ grid-column:1 / -1; }
+    header .stat{ font-size:11px; white-space:nowrap; }
+    header .stat.sec{ display:none; }
+    header .music-btn{ margin-left:auto; font-size:15px; }
+    header.open{ flex-wrap:wrap; }
+    header.open .stat.sec{ display:inline-block; }
+    header.open .repStat{ flex-basis:100%; }
+    #hdrToggle{
+      display:block; position:absolute; right:0; top:50%; transform:translateY(-50%);
+      background:transparent; border:none; color:var(--gold);
+      font-size:14px; padding:8px; cursor:pointer; line-height:1;
+      touch-action:manipulation;
+    }
+    #hdrToggle .arrow{ display:inline-block; transition:transform .25s ease; }
+    header.open #hdrToggle .arrow{ transform:rotate(180deg); }
     #repbar{ width:60px; }
+    /* Banner del tutorial compacto (tócalo para plegarlo/desplegarlo) */
+    #tutorBanner{ padding:5px 8px; margin:4px 0 0; border-width:2px; }
+    #tutorStepNo{ font-size:10px; letter-spacing:1px; }
+    #tutorText{ font-size:12px; line-height:1.45; }
     #log{
       margin-top:4px;
-      font-size:12px; min-height:0; padding:5px 8px;
+      font-size:12px; min-height:0; padding:4px 8px;
     }
     #log .old{ display:none; } /* solo el mensaje más reciente, para ahorrar espacio */
     #toolBadge{ display:block; margin-top:4px; font-size:11px; text-align:center; }
@@ -315,20 +341,24 @@
 <body class="title-open">
 <div id="game">
   <div id="topBar">
-  <header>
+  <header id="hdr">
     <span class="stat">📅 <b id="hudDay">Día 1</b></span>
     <span class="stat">⏱️ <b id="hudTime">00:00</b></span>
-    <span class="stat">🚪 <b id="hudQueue">0/0</b></span>
-    <span class="stat">👤 <b id="hudPatient">—</b></span>
+    <span class="stat sec">🚪 <b id="hudQueue">0/0</b></span>
+    <span class="stat sec">👤 <b id="hudPatient">—</b></span>
     <span class="stat">🪙 <b id="hudCoins">0</b></span>
     <button class="stat music-btn" id="headerGearBtn" title="Ajustes">⚙️</button>
-    <span class="stat repStat">⭐ <span id="repbar"><span id="repfill" style="display:block"></span></span></span>
+    <span class="stat repStat sec">⭐ <span id="repbar"><span id="repfill" style="display:block"></span></span></span>
+    <button id="hdrToggle" title="Ver más datos"><span class="arrow">▾</span></button>
   </header>
 
   <div id="tutorBanner" class="hidden">
-    <div id="tutorStepNo"></div>
+    <div id="tutorHead">
+      <span id="tutorStepNo"></span>
+      <span id="tutorProgress"></span>
+      <span id="tutorArrow">▾</span>
+    </div>
     <div id="tutorText"></div>
-    <div id="tutorProgress"></div>
   </div>
   <div id="log"><span id="logNew">Bienvenido a la barbería.</span><br><span class="old" id="logOld"></span></div>
   <div id="toolBadge" class="hidden">🫳 Herramienta: <b id="toolBadgeName">—</b></div>
@@ -2435,7 +2465,8 @@ function refreshTutorStep(force){
   $('tutorStepNo').textContent = s.title;
   $('tutorText').innerHTML = s.text;
   const a = afflictions(S.p);
-  $('tutorProgress').textContent = '✅ Males curados: '+a.done+' / '+a.total;
+  $('tutorProgress').textContent = '✅ '+a.done+'/'+a.total;
+  $('tutorBanner').classList.remove('mini'); // nuevo paso: mostrar la instrucción completa
   // resaltar la herramienta del paso
   document.querySelectorAll('.tool').forEach(btn=>{
     btn.classList.toggle('tut-hint', btn.dataset.tool===s.tool);
@@ -2456,6 +2487,10 @@ function finishTutorial(){
 }
 
 $('tutorialBtn').addEventListener('click', startTutorial);
+// Tocar el banner del tutorial lo pliega/despliega (para liberar espacio en móvil)
+$('tutorBanner').addEventListener('click', ()=>{ $('tutorBanner').classList.toggle('mini'); });
+// Botón ▾ del header móvil: expande/colapsa los datos secundarios
+$('hdrToggle').addEventListener('click', ()=>{ $('hdr').classList.toggle('open'); });
 
 // ============================== PANEL DE AJUSTES ==============================
 function syncSettingsUI(){
