@@ -834,7 +834,7 @@ const S = {
   floats:[], splats:[], msgOld:'',
   patientsServed:0, startTime:null,
   musicOn:true, musicVolume:0.1, sfxOn:true,
-  tutorial:false, tutStep:0,
+  tutorial:false, tutStep:0, tutPhaseB:false,
 };
 
 function dayPatientCount(d){
@@ -2375,31 +2375,32 @@ const TUT_STEPS = [
     title:'Paso 2 — Muela floja (Tenazas)',
     text:'Selecciona <b>🗜️ Tenazas</b> y pulsa la muela que <b>baila sola</b> en la boca. En el minijuego, pulsa <b>¡TIRAR!</b> cuando la aguja esté en la <b>zona verde</b>.' },
   { tool:'tenazas', need:'podrida',
-    title:'Paso 3 — Muela podrida (Tenazas + Hierro)',
-    text:'Con las <b>🗜️ Tenazas</b> arranca la muela <b>negra/podrida</b>. Al salir deja un <b>hueco sangrante</b> que tendrás que cauterizar en el siguiente paso.' },
-  { tool:'hierro', need:'_hueco',
-    title:'Paso 4 — Cauterizar (Hierro)',
-    text:'El hueco sangra. Elige el <b>🔥 Hierro</b> y pulsa el hueco. <b>Mantén pulsado</b> para calentar y suéltalo en la <b>zona naranja</b>, sin pasarte.' },
+    title:'Paso 3 — Muela podrida (Tenazas → Hierro)',
+    text:'La muela <b>negra/podrida</b> lleva dos pasos: <b>1)</b> con las <b>🗜️ Tenazas</b> arráncala (deja un hueco sangrante). <b>2)</b> luego cambia al <b>🔥 Hierro</b> y cauteriza ese hueco.',
+    // Fase B: una vez arrancada, queda hueco → cambiar a Hierro
+    altTool:'hierro',
+    altWhen:(p)=> p.teeth.some(t=>t.status==='hueco'),
+    altText:'¡Muela fuera! Ahora el hueco <b>sangra</b>. Cambia al <b>🔥 Hierro</b> y pulsa el hueco: <b>mantén pulsado</b> para calentar y suéltalo en la <b>zona naranja</b>, sin pasarte.' },
   { tool:'sanguijuelas', need:'flemon',
-    title:'Paso 5 — Flemón (Sanguijuelas)',
+    title:'Paso 4 — Flemón (Sanguijuelas)',
     text:'Un flemón hinchado se trata con <b>🪱 Sanguijuelas</b>. Pulsa la herramienta y luego toca todos los <b>círculos</b> para colocarlas.' },
   { tool:'lanceta', need:'humores',
-    title:'Paso 6 — Sangría (Lanceta)',
+    title:'Paso 5 — Sangría (Lanceta)',
     text:'Los "malos humores" se equilibran con una <b>🔪 Sangría</b>. Clava la lanceta en la <b>zona verde</b> y luego pulsa repetidamente para llenar el cuenco de sangre.' },
   { tool:'navaja', need:'grenas',
-    title:'Paso 7 — Afeitar (Navaja)',
+    title:'Paso 6 — Afeitar (Navaja)',
     text:'Usa la <b>🪒 Navaja</b> y <b>arrastra</b> sobre las greñas para afeitarlas. ¡Cuidado con las verrugas!' },
   { tool:'aguja', need:'herida',
-    title:'Paso 8 — Coser herida (Aguja)',
+    title:'Paso 7 — Coser herida (Aguja)',
     text:'Una herida abierta se cierra con <b>🪡 Aguja</b>. Pulsa los puntos en orden para dar las puntadas.' },
   { tool:'caldero', need:'tripas',
-    title:'Paso 9 — Preparar remedio (Caldero)',
+    title:'Paso 8 — Preparar remedio (Caldero)',
     text:'Las tripas embrujadas necesitan un brebaje. Usa el <b>⚗️ Caldero</b>: elige los ingredientes correctos y luego revuelve en el momento justo.' },
   { tool:'tablillas', need:'hueso',
-    title:'Paso 10 — Entablillar (Tablillas)',
+    title:'Paso 9 — Entablillar (Tablillas)',
     text:'Un hueso roto se inmoviliza con <b>🦴 Tablillas</b>. Alinea el hueso en la zona verde y luego venda antes de que se afloje.' },
   { tool:'cobrar', need:'_done',
-    title:'Paso 11 — ¡Cobra!',
+    title:'Paso 10 — ¡Cobra!',
     text:'¡Curaste todos los males! Pulsa <b>🪙 Cobrar</b> para recibir tu pago. Eso completa la atención de un paciente.' },
 ];
 
@@ -2430,7 +2431,7 @@ function startTutorial(){
   audio();
   $('titleOv').classList.add('hidden');
   document.body.classList.remove('title-open');
-  S.tutorial = true; S.tutStep = 0;
+  S.tutorial = true; S.tutStep = 0; S.tutPhaseB = false;
   S.day = 1; S.coins = 0; S.rep = 50; S.potions = 3;
   S.roster = []; S.qIdx = 0;
   S.patientsServed = 0; S.startTime = null; // sin cronómetro de récord
@@ -2458,10 +2459,6 @@ function currentTutStep(){
       if(!p.interrogated) return 0; // primero, interrogar
       continue;
     }
-    if(s.need==='_hueco'){
-      if(p.teeth.some(t=>t.status==='hueco')) return i; // hay hueco por cauterizar
-      continue;
-    }
     if(s.need==='_done'){
       const a = afflictions(p);
       if(a.done===a.total) return i;
@@ -2477,17 +2474,23 @@ function currentTutStep(){
 function refreshTutorStep(force){
   if(!S.tutorial) return;
   const idx = currentTutStep();
-  if(!force && idx===S.tutStep) return;
-  S.tutStep = idx;
   const s = TUT_STEPS[idx];
+  // Algunos pasos tienen una 2ª fase (ej. tras arrancar la podrida hay que
+  // cauterizar): cambia la herramienta a resaltar y el texto sin cambiar de paso.
+  const phaseB = s.altWhen && s.altWhen(S.p);
+  const tool = phaseB ? s.altTool : s.tool;
+  const text = phaseB ? s.altText : s.text;
+  // Redibujar si cambió el paso O cambió la fase dentro del mismo paso.
+  if(!force && idx===S.tutStep && phaseB===S.tutPhaseB) return;
+  S.tutStep = idx; S.tutPhaseB = phaseB;
   $('tutorStepNo').textContent = s.title;
-  $('tutorText').innerHTML = s.text;
+  $('tutorText').innerHTML = text;
   const a = afflictions(S.p);
   $('tutorProgress').textContent = '✅ '+a.done+'/'+a.total;
-  $('tutorBanner').classList.remove('mini'); // nuevo paso: mostrar la instrucción completa
-  // resaltar la herramienta del paso
+  $('tutorBanner').classList.remove('mini'); // nuevo paso/fase: mostrar la instrucción completa
+  // resaltar la herramienta correspondiente
   document.querySelectorAll('.tool').forEach(btn=>{
-    btn.classList.toggle('tut-hint', btn.dataset.tool===s.tool);
+    btn.classList.toggle('tut-hint', btn.dataset.tool===tool);
   });
 }
 
