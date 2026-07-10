@@ -108,9 +108,9 @@
   #toolsPanelHead{ display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
   #toolsHandle{ display:none; }
   .overlay{
-    position:absolute; inset:0; background:rgba(8,4,12,.93);
+    position:fixed; inset:0; background:rgba(8,4,12,.93);
     display:flex; align-items:center; justify-content:center; z-index:10;
-    padding:14px;
+    padding:14px; overflow-y:auto;
   }
   .card{
     background:var(--parch); color:var(--ink); border:4px solid var(--ink);
