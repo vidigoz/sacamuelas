@@ -277,6 +277,8 @@
   .lb-name{ flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .lb-stats{ font-size:12px; color:#c9b98f; white-space:nowrap; }
   .lb-row.me{ background:#241d0e; }
+  #homeLeaderboard{ margin-top:14px; box-shadow:4px 4px 0 #000; }
+  #homeLbBody{ max-height:230px; overflow-y:auto; }
   .btn{
     background:var(--blood); color:var(--parch); border:3px solid var(--ink);
     font-family:inherit; font-weight:bold; font-size:15px; letter-spacing:1px;
@@ -492,6 +494,12 @@
         <button class="btn" id="tutorialBtn">📖 TUTORIAL: Aprende a jugar</button>
         <button class="btn" id="startBtn">⚔️ ABRIR LA BARBERÍA</button>
       </div>
+
+      <!-- Ranking mundial en el inicio -->
+      <div class="leaderboard" id="homeLeaderboard">
+        <h2 style="margin:.5rem 0;font-size:1.05rem;">🏆 Ranking mundial (Top 10)</h2>
+        <div id="homeLbBody" class="lb-body"></div>
+      </div>
     </div>
   </div>
 
@@ -594,7 +602,7 @@
       </div>
 
       <button class="btn" id="showLbBtn" style="margin-top:.4rem;">📊 Ver ranking</button>
-      <button class="btn" id="restartBtn">🔄 Empezar de nuevo</button>
+      <button class="btn" id="restartBtn">🏠 Volver al inicio</button>
     </div>
   </div>
 </div>
@@ -735,10 +743,9 @@ async function submitScore(name, country, patients, timeMs){
 }
 
 // Trae el Top 10 y lo pinta. `mine` = {name,country,patients,timeMs} para resaltar tu fila.
-async function loadLeaderboard(mine){
-  const body = $('lbBody');
+// Trae el Top 10 y lo pinta en el elemento `body`. `mine` (opcional) resalta tu fila.
+async function fetchAndRenderLeaderboard(body, mine){
   body.innerHTML = '<div class="small">Cargando ranking…</div>';
-  $('leaderboard').classList.remove('hidden');
   try{
     const res = await fetch('/api/leaderboard');
     const data = await res.json();
@@ -763,6 +770,15 @@ async function loadLeaderboard(mine){
   }catch(e){
     body.innerHTML = '<div class="small" style="color:#ff6b6b;">No se pudo cargar el ranking.</div>';
   }
+}
+// Ranking en la pantalla de game over
+async function loadLeaderboard(mine){
+  $('leaderboard').classList.remove('hidden');
+  return fetchAndRenderLeaderboard($('lbBody'), mine);
+}
+// Ranking en el menú de inicio
+async function loadHomeLeaderboard(){
+  return fetchAndRenderLeaderboard($('homeLbBody'), null);
 }
 
 // Evita inyección de HTML al pintar el nombre en el ranking
@@ -1143,7 +1159,7 @@ $('showLbBtn').addEventListener('click', ()=>{
 
 $('restartBtn').addEventListener('click', ()=>{
   $('overOv').classList.add('hidden');
-  startGame();
+  goToMenu();
 });
 
 // ============================== CAJÓN DE HERRAMIENTAS (móvil) ==============================
@@ -2397,6 +2413,21 @@ function nextPatient(){
   log('🚪 Entra '+S.p.name+' con '+a.total+' mal(es). Lee lo que dice, o usa 💬 INTERROGAR si te la perdiste.');
   hud();
 }
+// Vuelve al menú de inicio (desde game over, fin de tutorial, etc.)
+function goToMenu(){
+  S.tutorial = false;
+  S.state = 'title';
+  S.p = null;
+  hideBubble();
+  document.querySelectorAll('.tool').forEach(b=>b.classList.remove('tut-hint'));
+  $('cobrarBig').classList.add('hidden');
+  $('tutorBanner').classList.add('hidden');
+  ['overOv','endOv','payOv','faintOv','miniOv','dayOv','settingsOv'].forEach(id=>$(id).classList.add('hidden'));
+  $('titleOv').classList.remove('hidden');
+  document.body.classList.add('title-open');
+  loadHomeLeaderboard(); // refrescar el ranking del inicio
+}
+
 function startGame(){
   audio();
   $('titleOv').classList.add('hidden');
@@ -2542,14 +2573,7 @@ function refreshTutorStep(force){
 
 // Se llama cuando el tutorial completa la atención (tras cobrar).
 function finishTutorial(){
-  S.tutorial = false;
-  document.querySelectorAll('.tool').forEach(b=>b.classList.remove('tut-hint'));
-  $('cobrarBig').classList.remove('tut-hint');
-  $('tutorBanner').classList.add('hidden');
-  $('titleOv').classList.remove('hidden');
-  document.body.classList.add('title-open');
-  S.state = 'title';
-  S.p = null;
+  goToMenu();
   log('🎓 ¡Tutorial completado! Ya sabes usar todas las herramientas. Pulsa "Abrir la barbería" para jugar de verdad.');
   beep(523,.1,'square',.05); setTimeout(()=>beep(659,.1,'square',.05),110); setTimeout(()=>beep(784,.2,'square',.05),220);
 }
@@ -2604,6 +2628,7 @@ $('volSlider').addEventListener('input', e=>{
 });
 $('volSlider').addEventListener('change', saveSettings);
 initSettingsFromStorage();
+loadHomeLeaderboard(); // cargar el ranking del menú de inicio
 
 hud();
 update();
