@@ -53,10 +53,20 @@
   }
   #face{width:100%; max-width:420px; height:auto;}
   #bubble{
-    position:absolute; bottom:8px; left:8px; right:8px;
+    position:absolute; bottom:22px; left:8px; right:8px;
     background:var(--parch); color:var(--ink);
     border:3px solid var(--ink); padding:8px 10px; font-size:12.5px; font-weight:bold;
     display:none; box-shadow:4px 4px 0 #000; pointer-events:none;
+  }
+  /* "colita" del bocadillo, apuntando hacia abajo (hacia la boca del paciente) */
+  #bubble::after{
+    content:''; position:absolute; bottom:-14px; left:38px;
+    border:7px solid transparent; border-top-color:var(--parch);
+    filter:drop-shadow(0 3px 0 var(--ink));
+  }
+  #bubble::before{
+    content:''; position:absolute; bottom:-18px; left:35px;
+    border:10px solid transparent; border-top-color:var(--ink);
   }
   aside{
     flex:1 1 330px; min-width:300px; display:flex; flex-direction:column; gap:8px;
@@ -1101,9 +1111,24 @@ $('restartBtn').addEventListener('click', ()=>{
 
 // ============================== CAJÓN DE HERRAMIENTAS (móvil) ==============================
 const TOOL_LABEL = { tenazas:'🗜️ Tenazas', hierro:'🔥 Hierro' };
-function openDrawer(){ $('toolsPanel').classList.add('open'); }
+// ---- Burbuja de diálogo del paciente (bocadillo que "sale" de su boca) ----
+let bubbleTimer = null;
+function showBubble(text, ms){
+  const b = $('bubble');
+  b.textContent = text;
+  b.style.display = 'block';
+  if(bubbleTimer){ clearTimeout(bubbleTimer); bubbleTimer = null; }
+  if(ms){ bubbleTimer = setTimeout(hideBubble, ms); }
+}
+function hideBubble(){
+  const b = $('bubble');
+  b.style.display = 'none';
+  if(bubbleTimer){ clearTimeout(bubbleTimer); bubbleTimer = null; }
+}
+
+function openDrawer(){ $('toolsPanel').classList.add('open'); hideBubble(); }
 function closeDrawer(){ $('toolsPanel').classList.remove('open'); }
-function toggleDrawer(){ $('toolsPanel').classList.toggle('open'); }
+function toggleDrawer(){ $('toolsPanel').classList.toggle('open'); if($('toolsPanel').classList.contains('open')) hideBubble(); }
 function updateToolBadge(){
   const badge = $('toolBadge');
   if(S.tool && TOOL_LABEL[S.tool]){
@@ -1167,15 +1192,13 @@ function useRag(){
 }
 function useInterrogar(){
   const p=S.p;
-  if(p.interrogated){ log('💬 Ya le preguntaste antes. No va a repetir la misma historia dos veces.'); return; }
+  // En el tutorial se puede volver a preguntar sin límite.
+  if(p.interrogated && !S.tutorial){ log('💬 Ya le preguntaste antes. No va a repetir la misma historia dos veces.'); return; }
   p.interrogated = true;
-  $('interrogarBtn').disabled = true;
-  const b=$('bubble');
-  b.textContent = introLine(p);
-  b.style.display='block';
-  setTimeout(()=>{ b.style.display='none'; }, 8000);
+  if(!S.tutorial) $('interrogarBtn').disabled = true;
+  showBubble(introLine(p), 8000);
   beep(700,.06,'square',.04); setTimeout(()=>beep(900,.07,'square',.04),70);
-  log('💬 "Decidme otra vez, ¿qué os aqueja?" — '+p.name+' repite su dolencia. Lee la pista sobre su cabeza.');
+  log('💬 "Decidme otra vez, ¿qué os aqueja?" — '+p.name+' repite su dolencia.');
   hud();
 }
 function useLeeches(){
@@ -2325,12 +2348,9 @@ function nextPatient(){
   closeDrawer();
   $('faintOv').classList.add('hidden');
   S.state='play';
-  const b=$('bubble');
-  b.textContent = introLine(S.p);
-  b.style.display='block';
-  setTimeout(()=>{ b.style.display='none'; }, 8000);
+  showBubble(introLine(S.p), 8000);
   const a=afflictions(S.p);
-  log('🚪 Entra '+S.p.name+' con '+a.total+' mal(es). Lee su queja arriba, o usa 💬 INTERROGAR si te la perdiste.');
+  log('🚪 Entra '+S.p.name+' con '+a.total+' mal(es). Lee lo que dice, o usa 💬 INTERROGAR si te la perdiste.');
   hud();
 }
 function startGame(){
@@ -2350,7 +2370,7 @@ $('startBtn').addEventListener('click', startGame);
 const TUT_STEPS = [
   { tool:'interrogar', need:null,
     title:'Paso 1 — Escucha al paciente',
-    text:'Cada aldeano te dice qué le duele en la burbuja sobre su cabeza. Pulsa <b>💬 Interrogar</b> para que repita su queja. Léela: te dice qué males tratar.' },
+    text:'Cada aldeano te dice qué le duele. Pulsa <b>💬 Interrogar</b> para que repita su queja: ahí verás qué males tratar. Puedes volver a preguntarle las veces que quieras.' },
   { tool:'tenazas', need:'floja',
     title:'Paso 2 — Muela floja (Tenazas)',
     text:'Selecciona <b>🗜️ Tenazas</b> y pulsa la muela que <b>baila sola</b> en la boca. En el minijuego, pulsa <b>¡TIRAR!</b> cuando la aguja esté en la <b>zona verde</b>.' },
@@ -2422,9 +2442,7 @@ function startTutorial(){
   S.p = buildTutorialPatient();
   S.state = 'play';
   $('tutorBanner').classList.remove('hidden');
-  const b = $('bubble');
-  b.textContent = introLine(S.p);
-  b.style.display = 'block';
+  showBubble(introLine(S.p)); // sin timer: se queda hasta abrir herramientas
   log('📖 TUTORIAL: atenderás a '+S.p.name+', que trae TODOS los males a la vez. Sigue las instrucciones de arriba. Aquí nadie se muere: practica con calma.');
   refreshTutorStep(true);
   hud();
