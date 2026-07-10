@@ -146,6 +146,31 @@
   }
   #titleOv .tools-help li:last-child{ border-bottom:none; }
   #titleOv .tools-help b{ color:var(--gold); }
+  #titleOv .start-actions{ display:flex; flex-direction:column; gap:8px; }
+  #tutorialBtn{ background:var(--wood); }
+  #tutorialBtn:hover{ background:var(--wood-l); }
+
+  /* --- Banner guía del tutorial --- */
+  #tutorBanner{
+    background:linear-gradient(180deg, #3a2c14, #241a0c);
+    border:3px solid var(--gold); box-shadow:0 4px 0 #000;
+    color:var(--parch); padding:8px 12px; margin:0 0 8px;
+    text-align:left; line-height:1.5;
+  }
+  #tutorStepNo{
+    color:var(--gold); font-weight:bold; font-size:11px;
+    letter-spacing:1.5px; text-transform:uppercase; margin-bottom:3px;
+  }
+  #tutorText{ font-size:13px; }
+  #tutorText b{ color:var(--gold); }
+  #tutorProgress{ font-size:11px; opacity:.8; margin-top:4px; }
+  /* Herramienta a usar, resaltada durante el tutorial */
+  .tool.tut-hint{
+    animation:tutPulse 1s ease-in-out infinite;
+    box-shadow:0 0 0 3px var(--gold), 0 0 12px var(--gold);
+    position:relative; z-index:1;
+  }
+  @keyframes tutPulse{ 0%,100%{ box-shadow:0 0 0 3px var(--gold), 0 0 6px var(--gold);} 50%{ box-shadow:0 0 0 3px var(--gold), 0 0 16px var(--gold);} }
   #gearBtn{
     position:absolute; top:8px; right:8px; z-index:2;
     background:var(--wood); color:var(--parch); border:2px solid var(--ink);
@@ -300,6 +325,11 @@
     <span class="stat repStat">⭐ <span id="repbar"><span id="repfill" style="display:block"></span></span></span>
   </header>
 
+  <div id="tutorBanner" class="hidden">
+    <div id="tutorStepNo"></div>
+    <div id="tutorText"></div>
+    <div id="tutorProgress"></div>
+  </div>
   <div id="log"><span id="logNew">Bienvenido a la barbería.</span><br><span class="old" id="logOld"></span></div>
   <div id="toolBadge" class="hidden">🫳 Herramienta: <b id="toolBadgeName">—</b></div>
   </div>
@@ -386,7 +416,11 @@
         </ul>
       </div>
 
-      <button class="btn" id="startBtn">⚔️ ABRIR LA BARBERÍA</button>
+      <div class="start-actions">
+        <button class="btn" id="tutorialBtn">📖 TUTORIAL: Aprende a jugar</button>
+        <button class="btn" id="startBtn">⚔️ ABRIR LA BARBERÍA</button>
+      </div>
+      <p class="small" style="margin-top:8px;opacity:.75;">¿Primera vez? Empieza por el tutorial: atenderás a un aldeano con todos los males, paso a paso.</p>
     </div>
   </div>
 
@@ -760,6 +794,7 @@ const S = {
   floats:[], splats:[], msgOld:'',
   patientsServed:0, startTime:null,
   musicOn:true, musicVolume:0.1, sfxOn:true,
+  tutorial:false, tutStep:0,
 };
 
 function dayPatientCount(d){
@@ -872,6 +907,8 @@ function hud(){
 function hurt(amount, silent){
   const p = S.p; if(!p) return;
   p.dolor = clamp(p.dolor + amount*p.cfg.drama, 0, 100);
+  // En el tutorial nadie se muere: el dolor nunca llega al desmayo.
+  if(S.tutorial){ p.dolor = clamp(p.dolor, 0, 85); }
   if(amount>0 && !silent){
     S.scream = 40; S.shake = 14;
     const o = p.cfg.ouch[irnd(0,p.cfg.ouch.length-1)];
@@ -1181,6 +1218,7 @@ function farewell(p){
 }
 $('payBtn').addEventListener('click', ()=>{
   $('payOv').classList.add('hidden');
+  if(S.tutorial){ finishTutorial(); return; }
   S.qIdx++;
   if(S.qIdx>=S.roster.length){ endDay(); } else { nextPatient(); }
 });
@@ -2202,9 +2240,14 @@ function update(){
     if(a.done<a.total){
       const urgencyMult = S.day>=2 ? 1.1 : 1.0;
       p.dolor = clamp(p.dolor + (p.painRate/18)*urgencyMult, 0, 100);
-      if(p.dolor>=100) hurt(0.001);
+      if(S.tutorial) p.dolor = clamp(p.dolor, 0, 85); // sin muerte en el tutorial
+      else if(p.dolor>=100) hurt(0.001);
       if(S.t%30===0) hud();
     }
+  }
+  // Tutorial: mantener el banner de guía sincronizado con el progreso
+  if(S.tutorial && (S.state==='play'||S.state==='mini') && S.t%10===0){
+    refreshTutorStep(false);
   }
   if(S.state==='mini'){
     if(mini.finishing>0){
@@ -2270,6 +2313,149 @@ function startGame(){
   beep(523,.1,'square',.05); setTimeout(()=>beep(659,.1,'square',.05),110); setTimeout(()=>beep(784,.2,'square',.05),220);
 }
 $('startBtn').addEventListener('click', startGame);
+
+// ============================== TUTORIAL JUGABLE ==============================
+// Pasos guía: uno por cada mal/herramienta. `need` es el tipo de mal pendiente
+// que hace avanzar el paso; `tool` es el botón que se resalta.
+const TUT_STEPS = [
+  { tool:'interrogar', need:null,
+    title:'Paso 1 — Escucha al paciente',
+    text:'Cada aldeano te dice qué le duele en la burbuja sobre su cabeza. Pulsa <b>💬 Interrogar</b> para que repita su queja. Léela: te dice qué males tratar.' },
+  { tool:'tenazas', need:'floja',
+    title:'Paso 2 — Muela floja (Tenazas)',
+    text:'Selecciona <b>🗜️ Tenazas</b> y pulsa la muela que <b>baila sola</b> en la boca. En el minijuego, pulsa <b>¡TIRAR!</b> cuando la aguja esté en la <b>zona verde</b>.' },
+  { tool:'tenazas', need:'podrida',
+    title:'Paso 3 — Muela podrida (Tenazas + Hierro)',
+    text:'Con las <b>🗜️ Tenazas</b> arranca la muela <b>negra/podrida</b>. Al salir deja un <b>hueco sangrante</b> que tendrás que cauterizar en el siguiente paso.' },
+  { tool:'hierro', need:'_hueco',
+    title:'Paso 4 — Cauterizar (Hierro)',
+    text:'El hueco sangra. Elige el <b>🔥 Hierro</b> y pulsa el hueco. <b>Mantén pulsado</b> para calentar y suéltalo en la <b>zona naranja</b>, sin pasarte.' },
+  { tool:'sanguijuelas', need:'flemon',
+    title:'Paso 5 — Flemón (Sanguijuelas)',
+    text:'Un flemón hinchado se trata con <b>🪱 Sanguijuelas</b>. Pulsa la herramienta y luego toca todos los <b>círculos</b> para colocarlas.' },
+  { tool:'lanceta', need:'humores',
+    title:'Paso 6 — Sangría (Lanceta)',
+    text:'Los "malos humores" se equilibran con una <b>🔪 Sangría</b>. Clava la lanceta en la <b>zona verde</b> y luego pulsa repetidamente para llenar el cuenco de sangre.' },
+  { tool:'navaja', need:'grenas',
+    title:'Paso 7 — Afeitar (Navaja)',
+    text:'Usa la <b>🪒 Navaja</b> y <b>arrastra</b> sobre las greñas para afeitarlas. ¡Cuidado con las verrugas!' },
+  { tool:'aguja', need:'herida',
+    title:'Paso 8 — Coser herida (Aguja)',
+    text:'Una herida abierta se cierra con <b>🪡 Aguja</b>. Pulsa los puntos en orden para dar las puntadas.' },
+  { tool:'caldero', need:'tripas',
+    title:'Paso 9 — Preparar remedio (Caldero)',
+    text:'Las tripas embrujadas necesitan un brebaje. Usa el <b>⚗️ Caldero</b>: elige los ingredientes correctos y luego revuelve en el momento justo.' },
+  { tool:'tablillas', need:'hueso',
+    title:'Paso 10 — Entablillar (Tablillas)',
+    text:'Un hueso roto se inmoviliza con <b>🦴 Tablillas</b>. Alinea el hueso en la zona verde y luego venda antes de que se afloje.' },
+  { tool:'cobrar', need:'_done',
+    title:'Paso 11 — ¡Cobra!',
+    text:'¡Curaste todos los males! Pulsa <b>🪙 Cobrar</b> para recibir tu pago. Eso completa la atención de un paciente.' },
+];
+
+// Construye un paciente de tutorial con TODOS los males, uno de cada tipo.
+function buildTutorialPatient(){
+  const cfg = CHARS.find(c=>c.id==='bartolo') || CHARS[0];
+  const p = {
+    cfg, name:cfg.name,
+    dolor: 15, awake:true,
+    teeth: Array.from({length:8}, ()=>({status:'s'})),
+    ailments: [],
+    faintCount: 0, wet: 0,
+    painRate: 0.15, // dolor muy lento en el tutorial
+    interrogated: false,
+  };
+  // un mal de cada tipo, en orden pedagógico
+  const types = ['floja','podrida','flemon','humores','grenas','herida','tripas','hueso'];
+  const slots = shuffle([0,1,2,3,4,5,6,7]);
+  types.forEach(t=>{
+    const a = { type:t, done:false, tooth:-1 };
+    if(AILDEF[t].tooth){ a.tooth = slots.pop(); p.teeth[a.tooth].status = t; }
+    p.ailments.push(a);
+  });
+  return p;
+}
+
+function startTutorial(){
+  audio();
+  $('titleOv').classList.add('hidden');
+  document.body.classList.remove('title-open');
+  S.tutorial = true; S.tutStep = 0;
+  S.day = 1; S.coins = 0; S.rep = 50; S.potions = 3;
+  S.roster = []; S.qIdx = 0;
+  S.patientsServed = 0; S.startTime = null; // sin cronómetro de récord
+  S.tool = null; S.splats = []; S.floats = []; S.splash = 0;
+  document.querySelectorAll('.tool').forEach(b=>b.classList.remove('active'));
+  $('interrogarBtn').disabled = false;
+  closeDrawer();
+  $('faintOv').classList.add('hidden');
+  S.p = buildTutorialPatient();
+  S.state = 'play';
+  $('tutorBanner').classList.remove('hidden');
+  const b = $('bubble');
+  b.textContent = introLine(S.p);
+  b.style.display = 'block';
+  log('📖 TUTORIAL: atenderás a '+S.p.name+', que trae TODOS los males a la vez. Sigue las instrucciones de arriba. Aquí nadie se muere: practica con calma.');
+  refreshTutorStep(true);
+  hud();
+  beep(523,.1,'square',.05); setTimeout(()=>beep(659,.1,'square',.05),110);
+}
+
+// Devuelve el índice del paso que corresponde al estado actual del paciente.
+function currentTutStep(){
+  const p = S.p; if(!p) return 0;
+  for(let i=0;i<TUT_STEPS.length;i++){
+    const s = TUT_STEPS[i];
+    if(i===0){
+      if(!p.interrogated) return 0; // primero, interrogar
+      continue;
+    }
+    if(s.need==='_hueco'){
+      if(p.teeth.some(t=>t.status==='hueco')) return i; // hay hueco por cauterizar
+      continue;
+    }
+    if(s.need==='_done'){
+      const a = afflictions(p);
+      if(a.done===a.total) return i;
+      continue;
+    }
+    if(pending(p, s.need)) return i;
+  }
+  const a = afflictions(p);
+  return a.done===a.total ? TUT_STEPS.length-1 : 0;
+}
+
+// Actualiza el banner y el resaltado de herramienta según el paso actual.
+function refreshTutorStep(force){
+  if(!S.tutorial) return;
+  const idx = currentTutStep();
+  if(!force && idx===S.tutStep) return;
+  S.tutStep = idx;
+  const s = TUT_STEPS[idx];
+  $('tutorStepNo').textContent = s.title;
+  $('tutorText').innerHTML = s.text;
+  const a = afflictions(S.p);
+  $('tutorProgress').textContent = '✅ Males curados: '+a.done+' / '+a.total;
+  // resaltar la herramienta del paso
+  document.querySelectorAll('.tool').forEach(btn=>{
+    btn.classList.toggle('tut-hint', btn.dataset.tool===s.tool);
+  });
+}
+
+// Se llama cuando el tutorial completa la atención (tras cobrar).
+function finishTutorial(){
+  S.tutorial = false;
+  document.querySelectorAll('.tool').forEach(b=>b.classList.remove('tut-hint'));
+  $('tutorBanner').classList.add('hidden');
+  $('titleOv').classList.remove('hidden');
+  document.body.classList.add('title-open');
+  S.state = 'title';
+  S.p = null;
+  log('🎓 ¡Tutorial completado! Ya sabes usar todas las herramientas. Pulsa "Abrir la barbería" para jugar de verdad.');
+  beep(523,.1,'square',.05); setTimeout(()=>beep(659,.1,'square',.05),110); setTimeout(()=>beep(784,.2,'square',.05),220);
+}
+
+$('tutorialBtn').addEventListener('click', startTutorial);
 
 // ============================== PANEL DE AJUSTES ==============================
 function syncSettingsUI(){
