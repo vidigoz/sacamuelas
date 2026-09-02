@@ -457,10 +457,10 @@
           <button class="tool" data-tool="interrogar" id="interrogarBtn"><span class="ico">💬</span>Interrogar</button>
           <button class="tool" data-tool="tenazas"><span class="ico">🗜️</span>Tenazas</button>
           <button class="tool" data-tool="hierro"><span class="ico">🔥</span>Hierro</button>
-          <button class="tool" data-tool="sanguijuelas"><span class="ico">🪱</span>Sanguij.</button>
+          <button class="tool" data-tool="sanguijuelas"><span class="ico">🐛</span>Sanguij.</button>
           <button class="tool" data-tool="lanceta"><span class="ico">🔪</span>Sangría</button>
           <button class="tool" data-tool="navaja"><span class="ico">🪒</span>Navaja</button>
-          <button class="tool" data-tool="aguja"><span class="ico">🪡</span>Aguja</button>
+          <button class="tool" data-tool="aguja"><span class="ico">🧵</span>Aguja</button>
           <button class="tool" data-tool="tablillas"><span class="ico">🦴</span>Tablillas</button>
           <button class="tool" data-tool="caldero"><span class="ico">⚗️</span>Caldero</button>
           <button class="tool" data-tool="pocion"><span class="ico">🧪</span>Poción <span id="pocionN">x3</span></button>
@@ -491,10 +491,10 @@
         <ul>
           <li>🗜️ <b>Tenazas</b> — arranca muelas podridas o flojas</li>
           <li>🔥 <b>Hierro</b> — cauteriza los huecos que sangran</li>
-          <li>🪱 <b>Sanguijuelas</b> — desinflaman flemones</li>
+          <li>🐛 <b>Sanguijuelas</b> — desinflaman flemones</li>
           <li>🔪 <b>Lanceta</b> — sangría para equilibrar los humores</li>
           <li>🪒 <b>Navaja</b> — afeita greñas (¡ojo con las verrugas!)</li>
-          <li>🪡 <b>Aguja</b> — cose heridas abiertas</li>
+          <li>🧵 <b>Aguja</b> — cose heridas abiertas</li>
           <li>⚗️ <b>Caldero</b> — prepara remedios con la receta correcta</li>
           <li>🦴 <b>Tablillas</b> — entablilla huesos rotos</li>
           <li>🧪 <b>Poción</b> — calma el dolor del paciente</li>
@@ -1272,7 +1272,7 @@ function useInterrogar(){
   hud();
 }
 function useLeeches(){
-  if(!pending(S.p,'flemon')){ log('🪱 No hay flemón que tratar. Las sanguijuelas se quedan en su frasco, decepcionadas.'); return; }
+  if(!pending(S.p,'flemon')){ log('🐛 No hay flemón que tratar. Las sanguijuelas se quedan en su frasco, decepcionadas.'); return; }
   startMini('leeches');
 }
 function useLancet(){
@@ -1284,7 +1284,7 @@ function useRazor(){
   startMini('shave');
 }
 function useNeedle(){
-  if(!pending(S.p,'herida')){ log('🪡 No hay heridas abiertas que coser. La aguja vuelve al alfiletero.'); return; }
+  if(!pending(S.p,'herida')){ log('🧵 No hay heridas abiertas que coser. La aguja vuelve al alfiletero.'); return; }
   startMini('stitch');
 }
 function useCauldron(){
@@ -1523,7 +1523,7 @@ function startMini(type, tooth){
       const tooClose = mini.spots.some(s=> Math.hypot(s.x-cand.x, s.y-cand.y) < 48);
       if(!tooClose) mini.spots.push({...cand, done:false});
     }
-    T.textContent='🪱 APLICAR SANGUIJUELAS';
+    T.textContent='🐛 APLICAR SANGUIJUELAS';
     D.textContent='El flemón está hinchado de "malos humores". Coloca las '+n+' sanguijuelas pulsando los círculos.';
     B.classList.add('hidden');
   }
@@ -1555,7 +1555,7 @@ function startMini(type, tooth){
       const x = ltr ? 70+i*(340/(n-1)) : 410-i*(340/(n-1));
       mini.stitches.push({ x, y: (i%2===0? 88:148)+rnd(-6,6), done:false });
     }
-    T.textContent='🪡 COSER LA HERIDA';
+    T.textContent='🧵 COSER LA HERIDA';
     D.textContent='Pulsa los puntos de sutura EN ORDEN (el que parpadea). Cada fallo es un pinchazo extra para el pobre paciente.';
     B.classList.add('hidden');
   }
@@ -1685,7 +1685,7 @@ function stitchTap(pos){
       resolveAil(S.p,'herida');
       hurt(6, true);
       float('¡Cosido!','#9fe07a',200,110);
-      log('🪡 Última puntada y nudo de marinero. La cicatriz contará una historia heroica (inventada).');
+      log('🧵 Última puntada y nudo de marinero. La cicatriz contará una historia heroica (inventada).');
     }
   } else {
     hurt(7);
@@ -2376,7 +2376,7 @@ function update(){
     if(mini.finishing>0){
       mini.finishing--;
       if(mini.finishing===0){
-        if(mini.type==='leeches'){ resolveAil(S.p,'flemon'); log('🪱 Las sanguijuelas, gorditas y felices, vuelven al frasco. El flemón ha bajado.'); }
+        if(mini.type==='leeches'){ resolveAil(S.p,'flemon'); log('🐛 Las sanguijuelas, gorditas y felices, vuelven al frasco. El flemón ha bajado.'); }
         closeMini();
       }
     } else {
@@ -2468,7 +2468,7 @@ const TUT_STEPS = [
     altText:'¡Muela fuera! Ahora el hueco <b>sangra</b>. Cambia al <b>🔥 Hierro</b> y pulsa el hueco: <b>mantén pulsado</b> para calentar y suéltalo en la <b>zona naranja</b>, sin pasarte.' },
   { tool:'sanguijuelas', need:'flemon',
     title:'Paso 4 — Flemón (Sanguijuelas)',
-    text:'Un flemón hinchado se trata con <b>🪱 Sanguijuelas</b>. Pulsa la herramienta y luego toca todos los <b>círculos</b> para colocarlas.' },
+    text:'Un flemón hinchado se trata con <b>🐛 Sanguijuelas</b>. Pulsa la herramienta y luego toca todos los <b>círculos</b> para colocarlas.' },
   { tool:'lanceta', need:'humores',
     title:'Paso 5 — Sangría (Lanceta)',
     text:'Los "malos humores" se equilibran con una <b>🔪 Sangría</b>. Clava la lanceta en la <b>zona verde</b> y luego pulsa repetidamente para llenar el cuenco de sangre.' },
@@ -2477,7 +2477,7 @@ const TUT_STEPS = [
     text:'Usa la <b>🪒 Navaja</b> y <b>arrastra</b> sobre las greñas para afeitarlas. ¡Cuidado con las verrugas!' },
   { tool:'aguja', need:'herida',
     title:'Paso 7 — Coser herida (Aguja)',
-    text:'Una herida abierta se cierra con <b>🪡 Aguja</b>. Pulsa los puntos en orden para dar las puntadas.' },
+    text:'Una herida abierta se cierra con <b>🧵 Aguja</b>. Pulsa los puntos en orden para dar las puntadas.' },
   { tool:'caldero', need:'tripas',
     title:'Paso 8 — Preparar remedio (Caldero)',
     text:'Las tripas embrujadas necesitan un brebaje. Usa el <b>⚗️ Caldero</b>: elige los ingredientes correctos y luego revuelve en el momento justo.' },
